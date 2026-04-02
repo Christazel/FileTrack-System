@@ -602,16 +602,25 @@ function App() {
 
       {activeSection === "home" ? (
         <>
-          <section className="hero-banner panel">
-            <div>
+          <section className="workspace-summary panel">
+            <div className="workspace-copy">
               <p className="eyebrow">Operational Overview</p>
-              <h1>Ruang kerja dokumen yang fokus ke aksi penting.</h1>
-              <p className="subtext">Mulai dari Beranda untuk melihat prioritas harian, lalu masuk ke menu Dokumen atau Notifikasi saat butuh aksi detail.</p>
+              <h1>Ruang kerja dokumen yang lebih fokus dan cepat dipindai.</h1>
+              <p className="subtext">Pantau file penting, notifikasi, dan aktivitas tim dari satu tampilan yang lebih tenang.</p>
             </div>
-            <div className="hero-stats">
-              <div><span>{dashboard.totalDocuments}</span><small>Dokumen</small></div>
-              <div><span>{dashboard.totalUsers}</span><small>User</small></div>
-              <div><span>{unreadNotifications}</span><small>Notif baru</small></div>
+            <div className="workspace-pills">
+              <div className="workspace-pill">
+                <small>Dokumen</small>
+                <strong>{dashboard.totalDocuments}</strong>
+              </div>
+              <div className="workspace-pill">
+                <small>User</small>
+                <strong>{dashboard.totalUsers}</strong>
+              </div>
+              <div className="workspace-pill">
+                <small>Notif</small>
+                <strong>{unreadNotifications}</strong>
+              </div>
             </div>
           </section>
 
@@ -636,7 +645,7 @@ function App() {
             </article>
           </section>
 
-          <section className="dashboard-grid">
+          <section className="dashboard-grid compact-grid">
             <div className="stack-col">
               <section className="panel">
                 <div className="panel-heading">
