@@ -11,6 +11,8 @@ const categoryRoutes = require("./routes/categories");
 const documentRoutes = require("./routes/documents");
 const dashboardRoutes = require("./routes/dashboard");
 const logsRoutes = require("./routes/logs");
+const userRoutes = require("./routes/users");
+const notificationRoutes = require("./routes/notifications");
 
 const app = express();
 
@@ -30,6 +32,8 @@ app.use("/api/categories", categoryRoutes);
 app.use("/api/documents", documentRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/logs", logsRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 app.use((error, _req, res, _next) => {
   if (error && error.message === "Tipe file tidak diizinkan.") {

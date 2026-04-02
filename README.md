@@ -9,6 +9,10 @@ FileTrack System adalah web aplikasi untuk menyimpan, mengelola, dan mencari dok
 - Manajemen kategori dokumen
 - Tag/label dokumen
 - Pencarian dokumen berdasarkan nama file/judul/tag/kategori/tanggal
+- Preview PDF langsung di dashboard
+- Versioning dokumen untuk revisi file
+- Share file antar user
+- Notifikasi upload dan share
 - Dashboard statistik (total dokumen, total user, dokumen terbaru)
 - Aktivitas log (upload, download, update, delete, login)
 - Download tracking per user
@@ -72,9 +76,18 @@ Semua akun memakai password: `Password123!`
 - `POST /api/categories` (ADMIN/MANAGER)
 - `GET /api/documents`
 - `POST /api/documents`
+- `GET /api/documents/:id/preview`
+- `GET /api/documents/:id/versions`
+- `POST /api/documents/:id/versions`
+- `GET /api/documents/:id/shares`
+- `POST /api/documents/:id/share`
 - `GET /api/documents/:id/download`
 - `PUT /api/documents/:id` (ADMIN/MANAGER)
 - `DELETE /api/documents/:id` (ADMIN)
+- `GET /api/users`
+- `GET /api/notifications`
+- `PATCH /api/notifications/:id/read`
+- `PATCH /api/notifications/read-all`
 - `GET /api/logs` (ADMIN/MANAGER)
 
 ## Catatan Keamanan

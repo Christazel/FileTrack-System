@@ -28,6 +28,10 @@ model User {
   updatedAt   DateTime   @updatedAt
   documents   Document[]
   logs        Log[]
+  notifications Notification[]
+  sentShares  DocumentShare[] @relation("DocumentSharedBy")
+  receivedShares DocumentShare[] @relation("DocumentSharedTo")
+  versionUploads DocumentVersion[]
 }
 
 model Category {
@@ -44,6 +48,7 @@ model Document {
   filePath     String
   mimeType     String
   fileSize     Int
+  currentVersion Int         @default(1)
   uploadedById Int
   categoryId   Int
   createdAt    DateTime      @default(now())
@@ -52,6 +57,39 @@ model Document {
   category     Category      @relation(fields: [categoryId], references: [id])
   tags         DocumentTag[]
   logs         Log[]
+  versions     DocumentVersion[]
+  shares       DocumentShare[]
+  notifications Notification[]
+}
+
+model DocumentVersion {
+  id           Int      @id @default(autoincrement())
+  documentId   Int
+  versionNumber Int
+  originalName  String
+  filePath     String
+  mimeType     String
+  fileSize     Int
+  uploadedById Int
+  createdAt    DateTime @default(now())
+  document     Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  uploadedBy   User     @relation(fields: [uploadedById], references: [id])
+
+  @@unique([documentId, versionNumber])
+  @@index([documentId])
+}
+
+model DocumentShare {
+  id          Int      @id @default(autoincrement())
+  documentId  Int
+  sharedById  Int
+  sharedToId  Int
+  message     String?
+  createdAt   DateTime @default(now())
+  readAt      DateTime?
+  document    Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  sharedBy    User     @relation("DocumentSharedBy", fields: [sharedById], references: [id])
+  sharedTo    User     @relation("DocumentSharedTo", fields: [sharedToId], references: [id])
 }
 
 model DocumentTag {
@@ -74,4 +112,19 @@ model Log {
   document   Document? @relation(fields: [documentId], references: [id])
 
   @@index([timestamp])
+}
+
+model Notification {
+  id         Int       @id @default(autoincrement())
+  userId     Int
+  documentId Int?
+  action     String
+  title      String
+  detail     String?
+  isRead     Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document   Document? @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
 }
