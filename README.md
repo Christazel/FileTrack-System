@@ -16,6 +16,7 @@ FileTrack System adalah web aplikasi untuk menyimpan, mengelola, dan mencari dok
 - Dashboard statistik (total dokumen, total user, dokumen terbaru)
 - Aktivitas log (upload, download, update, delete, login)
 - Download tracking per user
+- Halaman publik landing page yang siap presentasi
 
 ## Stack
 
@@ -44,6 +45,7 @@ FileTrack System adalah web aplikasi untuk menyimpan, mengelola, dan mencari dok
    npx prisma generate
    node prisma/seed.js
    ```
+   Jika Anda ingin langsung memakai SQL migration yang sudah disiapkan, file ada di `apps/api/prisma/migrations/20260402_0001_init/migration.sql`.
 3. Setup frontend:
    ```bash
    cd ../web
@@ -89,6 +91,11 @@ Semua akun memakai password: `Password123!`
 - `PATCH /api/notifications/:id/read`
 - `PATCH /api/notifications/read-all`
 - `GET /api/logs` (ADMIN/MANAGER)
+
+## Demo Data
+
+- Seed kini mengisi user demo, kategori, dokumen contoh, versi revisi, share, notifikasi, dan log aktivitas.
+- File demo PDF ada di `apps/api/uploads` untuk mendukung preview dan download saat presentasi.
 
 ## Catatan Keamanan
 

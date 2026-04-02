@@ -7,4 +7,5 @@ apps/api/node_modules/
 apps/web/node_modules/
 apps/api/uploads/*
 !apps/api/uploads/.gitkeep
+!apps/api/uploads/demo-*.pdf
 *.log
