@@ -543,32 +543,62 @@ function App() {
 
   return (
     <main className="app-shell">
-      <header className="topbar premium-topbar">
-        <div>
-          <p className="eyebrow">FileTrack System</p>
-          <h2>Welcome back, {user.name}</h2>
-          <p className="subtext">Role: {user.role} • {dayjs().format("DD MMM YYYY")}</p>
+      {/* SIDEBAR NAVIGATION */}
+      <aside className="sidebar">
+        <div className="sidebar-header">
+          <h2>📁 FileTrack</h2>
+          <p className="sidebar-user">{user.name}</p>
+          <span className={`badge-role role-${user.role.toLowerCase()}`}>{user.role}</span>
         </div>
-        <div className="topbar-actions">
-          <button className="ghost-btn" type="button" onClick={refreshAll}>Refresh</button>
-          <button className="ghost-btn bell-btn" type="button" onClick={markAllNotificationsRead}>
-            Notif {unreadNotifications ? `(${unreadNotifications})` : ""}
+
+        <nav className="sidebar-nav">
+          <button 
+            type="button" 
+            className={`nav-btn ${activeSection === "home" ? "active" : ""}`} 
+            onClick={() => setActiveSection("home")}
+          >
+            🏠 Dashboard
           </button>
-          <button onClick={logout} className="ghost-btn" type="button">Logout</button>
+          <button 
+            type="button" 
+            className={`nav-btn ${activeSection === "documents" ? "active" : ""}`} 
+            onClick={() => setActiveSection("documents")}
+          >
+            📄 Dokumen <span className="nav-badge">{documents.length}</span>
+          </button>
+          <button 
+            type="button" 
+            className={`nav-btn ${activeSection === "notifications" ? "active" : ""}`} 
+            onClick={() => setActiveSection("notifications")}
+          >
+            🔔 Notifikasi {unreadNotifications > 0 && <span className="nav-badge unread">{unreadNotifications}</span>}
+          </button>
+        </nav>
+
+        <div className="sidebar-footer">
+          <button type="button" className="sidebar-action refresh-btn" onClick={refreshAll} title="Refresh">🔄</button>
+          <button type="button" className="sidebar-action logout-btn" onClick={logout} title="Logout">🚪</button>
+        </div>
+      </aside>
+
+      {/* TOP BAR */}
+      <header className="topbar">
+        <div className="topbar-content">
+          <div>
+            <p className="eyebrow">{activeSection === "home" ? "Dashboard" : activeSection === "documents" ? "Dokumen" : "Notifikasi"}</p>
+            <h2 style={{ textTransform: "capitalize" }}>Selamat datang kembali, {user.name}!</h2>
+            <p className="subtext">{dayjs().format("dddd, DD MMMM YYYY")}</p>
+          </div>
+          <div className="topbar-actions">
+            <button className="ghost-btn" type="button" onClick={markAllNotificationsRead}>
+              🔔 {unreadNotifications > 0 ? `(${unreadNotifications})` : ""}
+            </button>
+          </div>
         </div>
       </header>
 
-      <section className="section-nav panel">
-        <button type="button" className={activeSection === "home" ? "tab-btn active" : "tab-btn"} onClick={() => setActiveSection("home")}>
-          Beranda
-        </button>
-        <button type="button" className={activeSection === "documents" ? "tab-btn active" : "tab-btn"} onClick={() => setActiveSection("documents")}>
-          Dokumen ({documents.length})
-        </button>
-        <button type="button" className={activeSection === "notifications" ? "tab-btn active" : "tab-btn"} onClick={() => setActiveSection("notifications")}>
-          Notifikasi {unreadNotifications ? `(${unreadNotifications})` : ""}
-        </button>
-      </section>
+      {/* MAIN CONTENT */}
+      <div className="main-content">
 
       {activeSection === "home" ? (
         <>
@@ -586,20 +616,23 @@ function App() {
           </section>
 
           <section className="stats-grid">
-            <article className="stat-card accent-card">
-              <p>Total Dokumen</p>
-              <strong>{dashboard.totalDocuments}</strong>
-              <span>Semua file aktif di sistem.</span>
+            <article className="modern-card">
+              <div className="card-icon">📄</div>
+              <p className="card-label">Total Dokumen</p>
+              <h3 className="card-value">{dashboard.totalDocuments}</h3>
+              <span className="card-desc">File aktif di sistem</span>
             </article>
-            <article className="stat-card accent-card secondary">
-              <p>Total Pengguna</p>
-              <strong>{dashboard.totalUsers}</strong>
-              <span>Akun yang dapat mengakses workspace.</span>
+            <article className="modern-card">
+              <div className="card-icon">👥</div>
+              <p className="card-label">Total Pengguna</p>
+              <h3 className="card-value">{dashboard.totalUsers}</h3>
+              <span className="card-desc">Akun workspace</span>
             </article>
-            <article className="stat-card accent-card tertiary">
-              <p>Dokumen Terbaru</p>
-              <strong>{recentDocuments.length}</strong>
-              <span>Prioritas untuk direview hari ini.</span>
+            <article className="modern-card">
+              <div className="card-icon">⏱️</div>
+              <p className="card-label">Dokumen Terbaru</p>
+              <h3 className="card-value">{recentDocuments.length}</h3>
+              <span className="card-desc">Prioritas untuk direview</span>
             </article>
           </section>
 
@@ -611,31 +644,31 @@ function App() {
                     <p className="eyebrow">Recent Activity</p>
                     <h3>Dokumen terbaru</h3>
                   </div>
-                  <button type="button" className="ghost-btn" onClick={() => setActiveSection("documents")}>Buka menu dokumen</button>
+                  <button type="button" className="ghost-btn" onClick={() => setActiveSection("documents")}>Lihat semua</button>
                 </div>
-                <div className="table-wrap">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Judul</th>
-                        <th>Kategori</th>
-                        <th>Uploader</th>
-                        <th>Tanggal</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {recentDocuments.length ? recentDocuments.map((doc) => (
-                        <tr key={doc.id}>
-                          <td>{doc.title}</td>
-                          <td>{doc.category?.name || "-"}</td>
-                          <td>{doc.uploadedBy?.name || "-"}</td>
-                          <td>{dayjs(doc.createdAt).format("DD MMM YYYY HH:mm")}</td>
-                        </tr>
-                      )) : (
-                        <tr><td colSpan="4" className="empty-cell">Belum ada dokumen terbaru.</td></tr>
-                      )}
-                    </tbody>
-                  </table>
+                <div className="doc-list">
+                  {recentDocuments.length ? (
+                    recentDocuments.slice(0, 5).map((doc) => (
+                      <div key={doc.id} className="doc-card">
+                        <div className="doc-header">
+                          <h4>{doc.title}</h4>
+                          <span className="chip soft">{doc.category?.name}</span>
+                        </div>
+                        <div className="doc-meta">
+                          <span>📄 {doc.originalName}</span>
+                          <span>v{doc.currentVersion || 1}</span>
+                        </div>
+                        <div className="doc-footer">
+                          <small>{doc.uploadedBy?.name} • {dayjs(doc.createdAt).format("DD MMM")}</small>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="empty-state">
+                      <p>📂 Belum ada dokumen</p>
+                      <span>Mulai upload dokumen pertama Anda</span>
+                    </div>
+                  )}
                 </div>
               </section>
             </div>
@@ -731,53 +764,43 @@ function App() {
                 </div>
                 <span className="chip">Preview PDF • Versioning • Share</span>
               </div>
-              <div className="table-wrap">
-                <table>
-                  <thead>
-                    <tr>
-                      <th style={{ cursor: "pointer" }} onClick={() => handleSortClick("title")}>
-                        Judul {sortBy === "title" ? (sortOrder === "asc" ? "↑" : "↓") : ""}
-                      </th>
-                      <th>File</th>
-                      <th>Kategori</th>
-                      <th>Versi</th>
-                      <th>Tag</th>
-                      <th>Uploader</th>
-                      <th style={{ cursor: "pointer" }} onClick={() => handleSortClick("createdAt")}>
-                        Tanggal {sortBy === "createdAt" ? (sortOrder === "asc" ? "↑" : "↓") : ""}
-                      </th>
-                      <th>Aksi</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {paginatedDocuments.length ? paginatedDocuments.map((doc) => (
-                      <tr key={doc.id}>
-                        <td>{doc.title}</td>
-                        <td>{doc.originalName}</td>
-                        <td><span className="chip soft">{doc.category?.name}</span></td>
-                        <td>v{doc.currentVersion || doc.versions?.[0]?.versionNumber || 1}</td>
-                        <td>{doc.tags?.map((tag) => tag.name).join(", ") || "-"}</td>
-                        <td>{doc.uploadedBy?.name}</td>
-                        <td>{dayjs(doc.createdAt).format("DD MMM YYYY HH:mm")}</td>
-                        <td>
-                          <div className="row-actions">
-                            {doc.mimeType === "application/pdf" ? (
-                              <button type="button" onClick={() => openPreview(doc)}>Preview</button>
-                            ) : null}
-                            <button type="button" className="ghost-btn" onClick={() => openVersions(doc)}>Versi</button>
-                            <button type="button" className="ghost-btn" onClick={() => downloadDocument(doc.id, doc.originalName)}>Download</button>
-                          </div>
-                        </td>
-                      </tr>
-                    )) : <tr><td colSpan="8" className="empty-cell">Belum ada dokumen. Mulai dari upload dokumen baru.</td></tr>}
-                  </tbody>
-                </table>
+              <div className="doc-list">
+                {paginatedDocuments.length ? (
+                  paginatedDocuments.map((doc) => (
+                    <div key={doc.id} className="doc-card interactive">
+                      <div className="doc-header">
+                        <h4>{doc.title}</h4>
+                        <span className="chip soft">{doc.category?.name}</span>
+                      </div>
+                      <div className="doc-meta">
+                        <span>📄 {doc.originalName}</span>
+                        <span>v{doc.currentVersion || 1}</span>
+                        {doc.tags?.length > 0 && <span>🏷️ {doc.tags.map(t => t.name).join(", ").substring(0, 20)}</span>}
+                      </div>
+                      <div className="doc-footer">
+                        <small>{doc.uploadedBy?.name} • {dayjs(doc.createdAt).format("DD MMM YYYY")}</small>
+                        <div className="doc-actions">
+                          {doc.mimeType === "application/pdf" ? (
+                            <button type="button" className="ghost-btn small" onClick={() => openPreview(doc)}>👁️ Preview</button>
+                          ) : null}
+                          <button type="button" className="ghost-btn small" onClick={() => openVersions(doc)}>📝 Versi</button>
+                          <button type="button" className="ghost-btn small" onClick={() => downloadDocument(doc.id, doc.originalName)}>⬇️ Download</button>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="empty-state">
+                    <p>📂 Belum ada dokumen</p>
+                    <span>Mulai upload dokumen pertama Anda</span>
+                  </div>
+                )}
               </div>
               {sortedDocuments.length > 0 ? (
                 <div className="pagination-controls">
-                  <button type="button" className="ghost-btn" onClick={() => setCurrentPage(Math.max(1, currentPage - 1))} disabled={currentPage === 1}>Sebelumnya</button>
-                  <span className="page-info">Halaman {currentPage} dari {totalPages} • Menampilkan {paginatedDocuments.length} dari {sortedDocuments.length} dokumen</span>
-                  <button type="button" className="ghost-btn" onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))} disabled={currentPage === totalPages}>Selanjutnya</button>
+                  <button type="button" className="ghost-btn" onClick={() => setCurrentPage(Math.max(1, currentPage - 1))} disabled={currentPage === 1}>← Sebelumnya</button>
+                  <span className="page-info">Halaman {currentPage} dari {totalPages} • {paginatedDocuments.length} / {sortedDocuments.length}</span>
+                  <button type="button" className="ghost-btn" onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))} disabled={currentPage === totalPages}>Selanjutnya →</button>
                 </div>
               ) : null}
             </section>
@@ -1022,6 +1045,8 @@ function App() {
           </div>
         </div>
       ) : null}
+      </div>
+      {/* END MAIN CONTENT */}
     </main>
   );
 }
