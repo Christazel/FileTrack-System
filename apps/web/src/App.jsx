@@ -745,8 +745,11 @@ function App() {
                   <button type="button" onClick={searchDocuments}>Cari</button>
                 </div>
               </div>
+              <div className="search-box">
+                <span aria-hidden="true">🔍</span>
+                <input placeholder="Cari dokumen..." value={query} onChange={(e) => setQuery(e.target.value)} />
+              </div>
               <div className="form-inline search-form">
-                <input placeholder="Cari nama file, judul, tag" value={query} onChange={(e) => setQuery(e.target.value)} />
                 <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
                   <option value="">Semua kategori</option>
                   {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
@@ -773,18 +776,18 @@ function App() {
                         <span className="chip soft">{doc.category?.name}</span>
                       </div>
                       <div className="doc-meta">
-                        <span>📄 {doc.originalName}</span>
+                        <span>{doc.originalName}</span>
                         <span>v{doc.currentVersion || 1}</span>
-                        {doc.tags?.length > 0 && <span>🏷️ {doc.tags.map(t => t.name).join(", ").substring(0, 20)}</span>}
+                        {doc.tags?.length > 0 && <span>{doc.tags.map((tag) => tag.name).join(", ").slice(0, 24)}</span>}
                       </div>
                       <div className="doc-footer">
                         <small>{doc.uploadedBy?.name} • {dayjs(doc.createdAt).format("DD MMM YYYY")}</small>
                         <div className="doc-actions">
                           {doc.mimeType === "application/pdf" ? (
-                            <button type="button" className="ghost-btn small" onClick={() => openPreview(doc)}>👁️ Preview</button>
+                            <button type="button" className="ghost-btn small" onClick={() => openPreview(doc)}>Preview</button>
                           ) : null}
-                          <button type="button" className="ghost-btn small" onClick={() => openVersions(doc)}>📝 Versi</button>
-                          <button type="button" className="ghost-btn small" onClick={() => downloadDocument(doc.id, doc.originalName)}>⬇️ Download</button>
+                          <button type="button" className="ghost-btn small" onClick={() => openVersions(doc)}>Versi</button>
+                          <button type="button" className="ghost-btn small" onClick={() => downloadDocument(doc.id, doc.originalName)}>Download</button>
                         </div>
                       </div>
                     </div>
@@ -815,10 +818,10 @@ function App() {
                 </div>
               </div>
               <div className="notification-list">
-                <div className="notification-item static"><strong>1. Upload</strong><span>Isi judul, kategori, tag, lalu upload file.</span></div>
-                <div className="notification-item static"><strong>2. Review</strong><span>Gunakan preview PDF sebelum dibagikan ke tim.</span></div>
-                <div className="notification-item static"><strong>3. Revisi</strong><span>Tambahkan versi baru agar riwayat tetap tercatat.</span></div>
-                <div className="notification-item static"><strong>4. Share</strong><span>Bagikan ke user terkait dan pantau notifikasi.</span></div>
+                <div className="notification-item static"><strong>1. Upload</strong><span>Masukkan judul, kategori, dan file.</span></div>
+                <div className="notification-item static"><strong>2. Review</strong><span>Preview dulu sebelum dibagikan.</span></div>
+                <div className="notification-item static"><strong>3. Revisi</strong><span>Tambah versi baru saat ada update.</span></div>
+                <div className="notification-item static"><strong>4. Share</strong><span>Kirim ke user yang relevan.</span></div>
               </div>
             </section>
           </aside>
