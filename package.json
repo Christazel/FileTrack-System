@@ -1,0 +1,20 @@
+{
+  "name": "filetrack-system",
+  "version": "1.0.0",
+  "description": "FileTrack System monorepo",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently \"npm --prefix apps/api run dev\" \"npm --prefix apps/web run dev\"",
+    "dev:api": "npm --prefix apps/api run dev",
+    "dev:web": "npm --prefix apps/web run dev",
+    "build:web": "npm --prefix apps/web run build",
+    "seed": "npm --prefix apps/api run prisma:seed"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

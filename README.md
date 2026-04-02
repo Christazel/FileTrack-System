@@ -1,0 +1,85 @@
+# FileTrack System
+
+FileTrack System adalah web aplikasi untuk menyimpan, mengelola, dan mencari dokumen perusahaan secara digital.
+
+## Fitur Utama
+
+- Login + RBAC (`ADMIN`, `MANAGER`, `STAFF`)
+- Upload dokumen (PDF, DOCX, XLSX, JPG, PNG) dengan validasi tipe dan batas ukuran 10MB
+- Manajemen kategori dokumen
+- Tag/label dokumen
+- Pencarian dokumen berdasarkan nama file/judul/tag/kategori/tanggal
+- Dashboard statistik (total dokumen, total user, dokumen terbaru)
+- Aktivitas log (upload, download, update, delete, login)
+- Download tracking per user
+
+## Stack
+
+- Frontend: React + Vite + Axios
+- Backend: Node.js + Express + Prisma + JWT + Multer
+- Database: MySQL
+- Storage: Local (`apps/api/uploads`)
+
+## Struktur Project
+
+- `apps/web` -> Frontend React
+- `apps/api` -> Backend API
+- `docker-compose.yml` -> MySQL local
+
+## Menjalankan Project
+
+1. Jalankan MySQL:
+   ```bash
+   docker compose up -d
+   ```
+2. Setup backend:
+   ```bash
+   cd apps/api
+   npm install
+   npx prisma migrate dev --name init
+   npx prisma generate
+   node prisma/seed.js
+   ```
+3. Setup frontend:
+   ```bash
+   cd ../web
+   npm install
+   ```
+4. Jalankan fullstack dari root:
+   ```bash
+   cd ../..
+   npm install
+   npm run dev
+   ```
+
+Frontend: `http://localhost:5173`
+Backend: `http://localhost:4000`
+
+## Demo User
+
+Semua akun memakai password: `Password123!`
+
+- `admin@filetrack.local` (ADMIN)
+- `manager@filetrack.local` (MANAGER)
+- `staff@filetrack.local` (STAFF)
+
+## Endpoint Inti
+
+- `POST /api/auth/login`
+- `GET /api/auth/me`
+- `GET /api/dashboard/summary`
+- `GET /api/categories`
+- `POST /api/categories` (ADMIN/MANAGER)
+- `GET /api/documents`
+- `POST /api/documents`
+- `GET /api/documents/:id/download`
+- `PUT /api/documents/:id` (ADMIN/MANAGER)
+- `DELETE /api/documents/:id` (ADMIN)
+- `GET /api/logs` (ADMIN/MANAGER)
+
+## Catatan Keamanan
+
+- JWT auth untuk semua endpoint private
+- RBAC di level route
+- Validasi input memakai Zod
+- Validasi file upload (mime type + size limit)

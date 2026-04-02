@@ -1,0 +1,77 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  STAFF
+  MANAGER
+}
+
+model User {
+  id          Int        @id @default(autoincrement())
+  name        String
+  email       String     @unique
+  password    String
+  role        Role       @default(STAFF)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  documents   Document[]
+  logs        Log[]
+}
+
+model Category {
+  id        Int        @id @default(autoincrement())
+  name      String     @unique
+  createdAt DateTime   @default(now())
+  documents Document[]
+}
+
+model Document {
+  id           Int           @id @default(autoincrement())
+  title        String
+  originalName String
+  filePath     String
+  mimeType     String
+  fileSize     Int
+  uploadedById Int
+  categoryId   Int
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  uploadedBy   User          @relation(fields: [uploadedById], references: [id])
+  category     Category      @relation(fields: [categoryId], references: [id])
+  tags         DocumentTag[]
+  logs         Log[]
+}
+
+model DocumentTag {
+  id         Int      @id @default(autoincrement())
+  name       String
+  documentId Int
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([name])
+}
+
+model Log {
+  id         Int       @id @default(autoincrement())
+  userId     Int
+  documentId Int?
+  action     String
+  detail     String?
+  timestamp  DateTime  @default(now())
+  user       User      @relation(fields: [userId], references: [id])
+  document   Document? @relation(fields: [documentId], references: [id])
+
+  @@index([timestamp])
+}
