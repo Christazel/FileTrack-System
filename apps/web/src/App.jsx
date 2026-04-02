@@ -74,11 +74,25 @@ function App() {
   const [shareDrafts, setShareDrafts] = useState({});
   const [documentVersions, setDocumentVersions] = useState([]);
   const [documentShares, setDocumentShares] = useState([]);
+  const [activeSection, setActiveSection] = useState("home");
 
   const headers = useMemo(() => ({ Authorization: `Bearer ${token}` }), [token]);
   const isManagerLike = user?.role === "ADMIN" || user?.role === "MANAGER";
 
   const unreadNotifications = notifications.filter((item) => !item.isRead).length;
+  const recentDocuments = dashboard.recentDocuments || [];
+
+  useEffect(() => {
+    if (!success) {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setSuccess("");
+    }, 2800);
+
+    return () => clearTimeout(timer);
+  }, [success]);
 
   function resolveDocument(documentOrId) {
     if (typeof documentOrId === "object" && documentOrId) {
@@ -357,6 +371,18 @@ function App() {
     }
   }
 
+  async function refreshAll() {
+    await loadData();
+    setSuccess("Data terbaru berhasil dimuat.");
+  }
+
+  function resetFilters() {
+    setQuery("");
+    setCategoryId("");
+    setDateFrom("");
+    setDateTo("");
+  }
+
   const closeModal = () => {
     if (previewModal.blobUrl) {
       URL.revokeObjectURL(previewModal.blobUrl);
@@ -455,6 +481,7 @@ function App() {
           <p className="subtext">Role: {user.role} • {dayjs().format("DD MMM YYYY")}</p>
         </div>
         <div className="topbar-actions">
+          <button className="ghost-btn" type="button" onClick={refreshAll}>Refresh</button>
           <button className="ghost-btn bell-btn" type="button" onClick={markAllNotificationsRead}>
             Notif {unreadNotifications ? `(${unreadNotifications})` : ""}
           </button>
@@ -462,181 +489,282 @@ function App() {
         </div>
       </header>
 
-      <section className="hero-banner panel">
-        <div>
-          <p className="eyebrow">Operational Overview</p>
-          <h1>Arsip digital yang siap demo, audit, dan dipakai harian.</h1>
-          <p className="subtext">Kelola dokumen, pantau aktivitas, bagikan file antar user, dan buka PDF langsung dari dashboard.</p>
-        </div>
-        <div className="hero-stats">
-          <div><span>{dashboard.totalDocuments}</span><small>Dokumen</small></div>
-          <div><span>{dashboard.totalUsers}</span><small>User</small></div>
-          <div><span>{unreadNotifications}</span><small>Notif baru</small></div>
-        </div>
+      <section className="section-nav panel">
+        <button type="button" className={activeSection === "home" ? "tab-btn active" : "tab-btn"} onClick={() => setActiveSection("home")}>
+          Beranda
+        </button>
+        <button type="button" className={activeSection === "documents" ? "tab-btn active" : "tab-btn"} onClick={() => setActiveSection("documents")}>
+          Dokumen ({documents.length})
+        </button>
+        <button type="button" className={activeSection === "notifications" ? "tab-btn active" : "tab-btn"} onClick={() => setActiveSection("notifications")}>
+          Notifikasi {unreadNotifications ? `(${unreadNotifications})` : ""}
+        </button>
       </section>
 
-      <section className="stats-grid">
-        <article className="stat-card accent-card">
-          <p>Total Dokumen</p>
-          <strong>{dashboard.totalDocuments}</strong>
-          <span>Semua file yang tersimpan aktif.</span>
-        </article>
-        <article className="stat-card accent-card secondary">
-          <p>Total Pengguna</p>
-          <strong>{dashboard.totalUsers}</strong>
-          <span>Admin, manager, dan staff.</span>
-        </article>
-        <article className="stat-card accent-card tertiary">
-          <p>Dokumen Terbaru</p>
-          <strong>{dashboard.recentDocuments.length}</strong>
-          <span>Masuk pada feed terbaru.</span>
-        </article>
-      </section>
-
-      <section className="dashboard-grid">
-        <div className="stack-col">
-          <section className="panel">
-            <div className="panel-heading">
-              <div>
-                <p className="eyebrow">Upload</p>
-                <h3>Tambah dokumen baru</h3>
-              </div>
+      {activeSection === "home" ? (
+        <>
+          <section className="hero-banner panel">
+            <div>
+              <p className="eyebrow">Operational Overview</p>
+              <h1>Ruang kerja dokumen yang fokus ke aksi penting.</h1>
+              <p className="subtext">Mulai dari Beranda untuk melihat prioritas harian, lalu masuk ke menu Dokumen atau Notifikasi saat butuh aksi detail.</p>
             </div>
-            <form className="form-inline upload-form" onSubmit={handleUpload}>
-              <input placeholder="Judul dokumen" value={uploadForm.title} onChange={(e) => setUploadForm((p) => ({ ...p, title: e.target.value }))} required />
-              <select value={uploadForm.categoryId} onChange={(e) => setUploadForm((p) => ({ ...p, categoryId: e.target.value }))} required>
-                <option value="">Pilih kategori</option>
-                {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
-              </select>
-              <input placeholder="Tag, pisahkan koma" value={uploadForm.tags} onChange={(e) => setUploadForm((p) => ({ ...p, tags: e.target.value }))} />
-              <input type="file" onChange={(e) => setUploadForm((p) => ({ ...p, file: e.target.files?.[0] || null }))} required />
-              <button type="submit">Upload</button>
-            </form>
+            <div className="hero-stats">
+              <div><span>{dashboard.totalDocuments}</span><small>Dokumen</small></div>
+              <div><span>{dashboard.totalUsers}</span><small>User</small></div>
+              <div><span>{unreadNotifications}</span><small>Notif baru</small></div>
+            </div>
           </section>
 
-          {isManagerLike ? (
+          <section className="stats-grid">
+            <article className="stat-card accent-card">
+              <p>Total Dokumen</p>
+              <strong>{dashboard.totalDocuments}</strong>
+              <span>Semua file aktif di sistem.</span>
+            </article>
+            <article className="stat-card accent-card secondary">
+              <p>Total Pengguna</p>
+              <strong>{dashboard.totalUsers}</strong>
+              <span>Akun yang dapat mengakses workspace.</span>
+            </article>
+            <article className="stat-card accent-card tertiary">
+              <p>Dokumen Terbaru</p>
+              <strong>{recentDocuments.length}</strong>
+              <span>Prioritas untuk direview hari ini.</span>
+            </article>
+          </section>
+
+          <section className="dashboard-grid">
+            <div className="stack-col">
+              <section className="panel">
+                <div className="panel-heading">
+                  <div>
+                    <p className="eyebrow">Recent Activity</p>
+                    <h3>Dokumen terbaru</h3>
+                  </div>
+                  <button type="button" className="ghost-btn" onClick={() => setActiveSection("documents")}>Buka menu dokumen</button>
+                </div>
+                <div className="table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Judul</th>
+                        <th>Kategori</th>
+                        <th>Uploader</th>
+                        <th>Tanggal</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {recentDocuments.length ? recentDocuments.map((doc) => (
+                        <tr key={doc.id}>
+                          <td>{doc.title}</td>
+                          <td>{doc.category?.name || "-"}</td>
+                          <td>{doc.uploadedBy?.name || "-"}</td>
+                          <td>{dayjs(doc.createdAt).format("DD MMM YYYY HH:mm")}</td>
+                        </tr>
+                      )) : (
+                        <tr><td colSpan="4" className="empty-cell">Belum ada dokumen terbaru.</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+            </div>
+
+            <aside className="stack-col side-col">
+              <section className="panel notifications-panel">
+                <div className="panel-heading">
+                  <div>
+                    <p className="eyebrow">Quick Inbox</p>
+                    <h3>Notifikasi penting</h3>
+                  </div>
+                  <button type="button" className="ghost-btn" onClick={() => setActiveSection("notifications")}>Lihat semua</button>
+                </div>
+                <div className="notification-list">
+                  {notifications.slice(0, 5).length ? notifications.slice(0, 5).map((item) => (
+                    <button key={item.id} type="button" className={`notification-item ${item.isRead ? "read" : "unread"}`} onClick={() => markNotificationRead(item.id)}>
+                      <strong>{item.title}</strong>
+                      <span>{item.detail || "-"}</span>
+                      <small>{dayjs(item.createdAt).format("DD MMM HH:mm")}</small>
+                    </button>
+                  )) : <div className="notification-item static"><strong>Belum ada notifikasi.</strong></div>}
+                </div>
+              </section>
+            </aside>
+          </section>
+        </>
+      ) : null}
+
+      {activeSection === "documents" ? (
+        <section className="dashboard-grid">
+          <div className="stack-col">
             <section className="panel">
               <div className="panel-heading">
                 <div>
-                  <p className="eyebrow">Kategori</p>
-                  <h3>Manajemen kategori</h3>
+                  <p className="eyebrow">Upload</p>
+                  <h3>Tambah dokumen baru</h3>
                 </div>
               </div>
-              <form className="form-inline compact-form" onSubmit={createCategory}>
-                <input placeholder="Kategori baru" value={newCategory} onChange={(e) => setNewCategory(e.target.value)} />
-                <button type="submit">Tambah</button>
+              <form className="form-inline upload-form" onSubmit={handleUpload}>
+                <input placeholder="Judul dokumen" value={uploadForm.title} onChange={(e) => setUploadForm((p) => ({ ...p, title: e.target.value }))} required />
+                <select value={uploadForm.categoryId} onChange={(e) => setUploadForm((p) => ({ ...p, categoryId: e.target.value }))} required>
+                  <option value="">Pilih kategori</option>
+                  {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
+                </select>
+                <input placeholder="Tag, pisahkan koma" value={uploadForm.tags} onChange={(e) => setUploadForm((p) => ({ ...p, tags: e.target.value }))} />
+                <input type="file" onChange={(e) => setUploadForm((p) => ({ ...p, file: e.target.files?.[0] || null }))} required />
+                <button type="submit">Upload</button>
               </form>
             </section>
-          ) : null}
 
-          <section className="panel">
-            <div className="panel-heading">
-              <div>
-                <p className="eyebrow">Search</p>
-                <h3>Pencarian dokumen</h3>
-              </div>
-              <button type="button" onClick={searchDocuments}>Cari</button>
-            </div>
-            <div className="form-inline search-form">
-              <input placeholder="Cari nama file, judul, tag" value={query} onChange={(e) => setQuery(e.target.value)} />
-              <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
-                <option value="">Semua kategori</option>
-                {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
-              </select>
-              <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
-              <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
-            </div>
-          </section>
+            {isManagerLike ? (
+              <section className="panel">
+                <div className="panel-heading">
+                  <div>
+                    <p className="eyebrow">Kategori</p>
+                    <h3>Manajemen kategori</h3>
+                  </div>
+                </div>
+                <form className="form-inline compact-form" onSubmit={createCategory}>
+                  <input placeholder="Kategori baru" value={newCategory} onChange={(e) => setNewCategory(e.target.value)} />
+                  <button type="submit">Tambah</button>
+                </form>
+              </section>
+            ) : null}
 
-          <section className="panel">
-            <div className="panel-heading">
-              <div>
-                <p className="eyebrow">Dokumen</p>
-                <h3>Daftar dokumen</h3>
-              </div>
-              <span className="chip">Preview PDF • Versioning • Share</span>
-            </div>
-            <div className="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Judul</th>
-                    <th>File</th>
-                    <th>Kategori</th>
-                    <th>Versi</th>
-                    <th>Tag</th>
-                    <th>Uploader</th>
-                    <th>Tanggal</th>
-                    <th>Aksi</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {documents.map((doc) => (
-                    <tr key={doc.id}>
-                      <td>{doc.title}</td>
-                      <td>{doc.originalName}</td>
-                      <td><span className="chip soft">{doc.category?.name}</span></td>
-                      <td>v{doc.currentVersion || doc.versions?.[0]?.versionNumber || 1}</td>
-                      <td>{doc.tags?.map((tag) => tag.name).join(", ") || "-"}</td>
-                      <td>{doc.uploadedBy?.name}</td>
-                      <td>{dayjs(doc.createdAt).format("DD MMM YYYY HH:mm")}</td>
-                      <td>
-                        <div className="row-actions">
-                          {doc.mimeType === "application/pdf" ? (
-                            <button type="button" onClick={() => openPreview(doc)}>Preview</button>
-                          ) : null}
-                          <button type="button" className="ghost-btn" onClick={() => openVersions(doc)}>Versi</button>
-                          <button type="button" className="ghost-btn" onClick={() => downloadDocument(doc.id, doc.originalName)}>Download</button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
-        </div>
-
-        <aside className="stack-col side-col">
-          <section className="panel notifications-panel">
-            <div className="panel-heading">
-              <div>
-                <p className="eyebrow">Notifications</p>
-                <h3>Notifikasi terbaru</h3>
-              </div>
-            </div>
-            <div className="notification-list">
-              {notifications.map((item) => (
-                <button key={item.id} type="button" className={`notification-item ${item.isRead ? "read" : "unread"}`} onClick={() => markNotificationRead(item.id)}>
-                  <strong>{item.title}</strong>
-                  <span>{item.detail || "-"}</span>
-                  <small>{dayjs(item.createdAt).format("DD MMM HH:mm")}</small>
-                </button>
-              ))}
-            </div>
-          </section>
-
-          {isManagerLike ? (
             <section className="panel">
               <div className="panel-heading">
                 <div>
-                  <p className="eyebrow">Activity</p>
-                  <h3>Log sistem</h3>
+                  <p className="eyebrow">Search</p>
+                  <h3>Pencarian dokumen</h3>
+                </div>
+                <div className="action-row">
+                  <button type="button" className="ghost-btn" onClick={resetFilters}>Reset filter</button>
+                  <button type="button" onClick={searchDocuments}>Cari</button>
                 </div>
               </div>
-              <div className="notification-list logs-list">
-                {logs.map((item) => (
-                  <div key={item.id} className="notification-item static">
-                    <strong>{item.action}</strong>
-                    <span>{item.detail || "-"}</span>
-                    <small>{item.user?.name} • {dayjs(item.timestamp).format("DD MMM HH:mm")}</small>
-                  </div>
-                ))}
+              <div className="form-inline search-form">
+                <input placeholder="Cari nama file, judul, tag" value={query} onChange={(e) => setQuery(e.target.value)} />
+                <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
+                  <option value="">Semua kategori</option>
+                  {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
+                </select>
+                <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+                <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
               </div>
             </section>
-          ) : null}
-        </aside>
-      </section>
+
+            <section className="panel">
+              <div className="panel-heading">
+                <div>
+                  <p className="eyebrow">Dokumen</p>
+                  <h3>Daftar dokumen</h3>
+                </div>
+                <span className="chip">Preview PDF • Versioning • Share</span>
+              </div>
+              <div className="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Judul</th>
+                      <th>File</th>
+                      <th>Kategori</th>
+                      <th>Versi</th>
+                      <th>Tag</th>
+                      <th>Uploader</th>
+                      <th>Tanggal</th>
+                      <th>Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {documents.length ? documents.map((doc) => (
+                      <tr key={doc.id}>
+                        <td>{doc.title}</td>
+                        <td>{doc.originalName}</td>
+                        <td><span className="chip soft">{doc.category?.name}</span></td>
+                        <td>v{doc.currentVersion || doc.versions?.[0]?.versionNumber || 1}</td>
+                        <td>{doc.tags?.map((tag) => tag.name).join(", ") || "-"}</td>
+                        <td>{doc.uploadedBy?.name}</td>
+                        <td>{dayjs(doc.createdAt).format("DD MMM YYYY HH:mm")}</td>
+                        <td>
+                          <div className="row-actions">
+                            {doc.mimeType === "application/pdf" ? (
+                              <button type="button" onClick={() => openPreview(doc)}>Preview</button>
+                            ) : null}
+                            <button type="button" className="ghost-btn" onClick={() => openVersions(doc)}>Versi</button>
+                            <button type="button" className="ghost-btn" onClick={() => downloadDocument(doc.id, doc.originalName)}>Download</button>
+                          </div>
+                        </td>
+                      </tr>
+                    )) : <tr><td colSpan="8" className="empty-cell">Belum ada dokumen. Mulai dari upload dokumen baru.</td></tr>}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+
+          <aside className="stack-col side-col">
+            <section className="panel notifications-panel">
+              <div className="panel-heading">
+                <div>
+                  <p className="eyebrow">Tips</p>
+                  <h3>Alur rekomendasi</h3>
+                </div>
+              </div>
+              <div className="notification-list">
+                <div className="notification-item static"><strong>1. Upload</strong><span>Isi judul, kategori, tag, lalu upload file.</span></div>
+                <div className="notification-item static"><strong>2. Review</strong><span>Gunakan preview PDF sebelum dibagikan ke tim.</span></div>
+                <div className="notification-item static"><strong>3. Revisi</strong><span>Tambahkan versi baru agar riwayat tetap tercatat.</span></div>
+                <div className="notification-item static"><strong>4. Share</strong><span>Bagikan ke user terkait dan pantau notifikasi.</span></div>
+              </div>
+            </section>
+          </aside>
+        </section>
+      ) : null}
+
+      {activeSection === "notifications" ? (
+        <section className="dashboard-grid single-view-grid">
+          <div className="stack-col">
+            <section className="panel notifications-panel">
+              <div className="panel-heading">
+                <div>
+                  <p className="eyebrow">Notifications</p>
+                  <h3>Notifikasi terbaru</h3>
+                </div>
+              </div>
+              <div className="notification-list">
+                {notifications.length ? notifications.map((item) => (
+                  <button key={item.id} type="button" className={`notification-item ${item.isRead ? "read" : "unread"}`} onClick={() => markNotificationRead(item.id)}>
+                    <strong>{item.title}</strong>
+                    <span>{item.detail || "-"}</span>
+                    <small>{dayjs(item.createdAt).format("DD MMM YYYY HH:mm")}</small>
+                  </button>
+                )) : <div className="notification-item static"><strong>Tidak ada notifikasi.</strong><span>Notifikasi akan muncul setelah upload/share dokumen.</span></div>}
+              </div>
+            </section>
+
+            {isManagerLike ? (
+              <section className="panel">
+                <div className="panel-heading">
+                  <div>
+                    <p className="eyebrow">Activity</p>
+                    <h3>Log sistem</h3>
+                  </div>
+                </div>
+                <div className="notification-list logs-list">
+                  {logs.length ? logs.map((item) => (
+                    <div key={item.id} className="notification-item static">
+                      <strong>{item.action}</strong>
+                      <span>{item.detail || "-"}</span>
+                      <small>{item.user?.name} • {dayjs(item.timestamp).format("DD MMM HH:mm")}</small>
+                    </div>
+                  )) : <div className="notification-item static"><strong>Belum ada log aktivitas.</strong></div>}
+                </div>
+              </section>
+            ) : null}
+          </div>
+        </section>
+      ) : null}
 
       {loading ? <p className="status-note">Memuat data...</p> : null}
       {error ? <p className="error-text status-note">{error}</p> : null}

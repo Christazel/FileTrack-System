@@ -452,6 +452,25 @@ select:focus {
   padding: 20px;
 }
 
+.section-nav {
+  display: flex;
+  gap: 10px;
+  padding: 10px;
+  flex-wrap: wrap;
+}
+
+.tab-btn {
+  background: rgba(255, 255, 255, 0.88);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  box-shadow: none;
+}
+
+.tab-btn.active {
+  background: linear-gradient(135deg, var(--brand), #0ea5a8);
+  color: white;
+}
+
 .panel-heading {
   display: flex;
   justify-content: space-between;
@@ -481,6 +500,11 @@ select:focus {
 
 .compact-form {
   grid-template-columns: 1fr auto;
+}
+
+.action-row {
+  display: flex;
+  gap: 8px;
 }
 
 .version-form,
@@ -530,6 +554,12 @@ select:focus {
   overflow: auto;
   border-radius: 18px;
   border: 1px solid rgba(255, 255, 255, 0.68);
+}
+
+.empty-cell {
+  text-align: center;
+  color: var(--subtle);
+  padding: 24px 12px;
 }
 
 table {
@@ -708,6 +738,10 @@ thead th {
   overflow: auto;
 }
 
+.single-view-grid {
+  grid-template-columns: 1fr;
+}
+
 @media (max-width: 1180px) {
   .landing-grid,
   .hero-card,
@@ -769,6 +803,11 @@ thead th {
   .topbar-actions {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .section-nav,
+  .action-row {
+    flex-direction: column;
   }
 
   .hero-stats {
