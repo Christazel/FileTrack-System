@@ -1,6 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
-import dayjs from "dayjs";
+import LoginPage from "./components/LoginPage";
+import Sidebar from "./components/layout/Sidebar";
+import Topbar from "./components/layout/Topbar";
+import HomeSection from "./components/sections/HomeSection";
+import DocumentsSection from "./components/sections/DocumentsSection";
+import NotificationsSection from "./components/sections/NotificationsSection";
+import PreviewModal from "./components/modals/PreviewModal";
+import ToastContainer from "./components/ui/ToastContainer";
+import OnboardingOverlay from "./components/ui/OnboardingOverlay";
 
 const api = axios.create({ baseURL: "/api" });
 
@@ -76,16 +84,12 @@ function App() {
   const [documentShares, setDocumentShares] = useState([]);
   const [activeSection, setActiveSection] = useState("home");
 
-  // Pagination and sorting
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize] = useState(10);
   const [sortBy, setSortBy] = useState("createdAt");
   const [sortOrder, setSortOrder] = useState("desc");
 
-  // Toast notifications
   const [toasts, setToasts] = useState([]);
-
-  // Onboarding
   const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem("filetrack_onboarding_seen"));
 
   const headers = useMemo(() => ({ Authorization: `Bearer ${token}` }), [token]);
@@ -199,7 +203,6 @@ function App() {
     setPreviewModal(emptyDocumentModal);
   }
 
-  // Helper: Show toast notification
   function showToast(message, type = "success") {
     const toastId = Date.now();
     const newToast = { id: toastId, message, type };
@@ -209,7 +212,6 @@ function App() {
     }, 3000);
   }
 
-  // Helper: Handle sort column click
   function handleSortClick(column) {
     if (sortBy === column) {
       setSortOrder(sortOrder === "asc" ? "desc" : "asc");
@@ -220,7 +222,6 @@ function App() {
     setCurrentPage(1);
   }
 
-  // Helper: Get sorted and paginated documents
   const sortedDocuments = useMemo(() => {
     const sorted = [...documents].sort((a, b) => {
       let aVal = a[sortBy];
@@ -249,7 +250,6 @@ function App() {
     return sortedDocuments.slice(start, start + pageSize);
   }, [sortedDocuments, currentPage, pageSize]);
 
-  // Helper: Dismiss onboarding
   function dismissOnboarding() {
     localStorage.setItem("filetrack_onboarding_seen", "true");
     setShowOnboarding(false);
@@ -463,602 +463,120 @@ function App() {
 
   if (!token || !user) {
     return (
-      <main className="login-layout">
-        <section className="landing-shell">
-          <div className="landing-grid">
-            <article className="landing-hero panel hero-card">
-              <div className="hero-copy">
-                <p className="eyebrow">FileTrack System</p>
-                <h1>Document management yang terlihat siap dipakai perusahaan.</h1>
-                <p className="subtext">
-                  FileTrack System menyatukan upload, search cepat, preview PDF, versioning, sharing, notifikasi, dan role management dalam satu pengalaman yang rapi.
-                </p>
-                <div className="proof-strip">
-                  {publicProofPoints.map((item) => (
-                    <div key={item.label} className="proof-item">
-                      <small>{item.label}</small>
-                      <strong>{item.value}</strong>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="feature-grid">
-                {publicFeatures.map((feature) => (
-                  <article key={feature.title} className="feature-card">
-                    <span className="feature-dot" />
-                    <h3>{feature.title}</h3>
-                    <p>{feature.description}</p>
-                  </article>
-                ))}
-              </div>
-            </article>
-
-            <aside className="login-card auth-card">
-              <div className="auth-badge">Secure access</div>
-              <h2>Masuk ke dashboard</h2>
-              <p className="subtext">Gunakan akun demo untuk melihat role, log aktivitas, dan panel notifikasi.</p>
-              <form onSubmit={handleLogin} className="form-grid auth-form">
-                <label>
-                  Email
-                  <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" required />
-                </label>
-                <label>
-                  Password
-                  <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" required />
-                </label>
-                <button type="submit">Masuk ke Dashboard</button>
-              </form>
-              <div className="demo-box">
-                <strong>Demo accounts</strong>
-                <ul>
-                  <li>admin@filetrack.local</li>
-                  <li>manager@filetrack.local</li>
-                  <li>staff@filetrack.local</li>
-                </ul>
-                <p>Password: Password123!</p>
-              </div>
-              {error ? <p className="error-text">{error}</p> : null}
-              {success ? <p className="success-text">{success}</p> : null}
-            </aside>
-          </div>
-
-          <section className="landing-band panel">
-            <div>
-              <p className="eyebrow">How it works</p>
-              <h3>Alur yang mudah dipresentasikan.</h3>
-            </div>
-            <div className="workflow-grid">
-              {publicWorkflow.map((step, index) => (
-                <div key={step} className="workflow-step">
-                  <span>0{index + 1}</span>
-                  <p>{step}</p>
-                </div>
-              ))}
-            </div>
-          </section>
-        </section>
-      </main>
+      <LoginPage
+        publicProofPoints={publicProofPoints}
+        publicFeatures={publicFeatures}
+        publicWorkflow={publicWorkflow}
+        email={email}
+        password={password}
+        setEmail={setEmail}
+        setPassword={setPassword}
+        handleLogin={handleLogin}
+        error={error}
+        success={success}
+      />
     );
   }
 
   return (
     <main className="app-shell">
-      {/* SIDEBAR NAVIGATION */}
-      <aside className="sidebar">
-        <div className="sidebar-header">
-          <h2>📁 FileTrack</h2>
-          <p className="sidebar-user">{user.name}</p>
-          <span className={`badge-role role-${user.role.toLowerCase()}`}>{user.role}</span>
-        </div>
+      <Sidebar
+        user={user}
+        activeSection={activeSection}
+        setActiveSection={setActiveSection}
+        documentsCount={documents.length}
+        unreadNotifications={unreadNotifications}
+        refreshAll={refreshAll}
+        logout={logout}
+      />
 
-        <nav className="sidebar-nav">
-          <button 
-            type="button" 
-            className={`nav-btn ${activeSection === "home" ? "active" : ""}`} 
-            onClick={() => setActiveSection("home")}
-          >
-            🏠 Dashboard
-          </button>
-          <button 
-            type="button" 
-            className={`nav-btn ${activeSection === "documents" ? "active" : ""}`} 
-            onClick={() => setActiveSection("documents")}
-          >
-            📄 Dokumen <span className="nav-badge">{documents.length}</span>
-          </button>
-          <button 
-            type="button" 
-            className={`nav-btn ${activeSection === "notifications" ? "active" : ""}`} 
-            onClick={() => setActiveSection("notifications")}
-          >
-            🔔 Notifikasi {unreadNotifications > 0 && <span className="nav-badge unread">{unreadNotifications}</span>}
-          </button>
-        </nav>
+      <Topbar
+        activeSection={activeSection}
+        userName={user.name}
+        unreadNotifications={unreadNotifications}
+        markAllNotificationsRead={markAllNotificationsRead}
+      />
 
-        <div className="sidebar-footer">
-          <button type="button" className="sidebar-action refresh-btn" onClick={refreshAll} title="Refresh">🔄</button>
-          <button type="button" className="sidebar-action logout-btn" onClick={logout} title="Logout">🚪</button>
-        </div>
-      </aside>
-
-      {/* TOP BAR */}
-      <header className="topbar">
-        <div className="topbar-content">
-          <div>
-            <p className="eyebrow">{activeSection === "home" ? "Dashboard" : activeSection === "documents" ? "Dokumen" : "Notifikasi"}</p>
-            <h2 style={{ textTransform: "capitalize" }}>Selamat datang kembali, {user.name}!</h2>
-            <p className="subtext">{dayjs().format("dddd, DD MMMM YYYY")}</p>
-          </div>
-          <div className="topbar-actions">
-            <button className="ghost-btn" type="button" onClick={markAllNotificationsRead}>
-              🔔 {unreadNotifications > 0 ? `(${unreadNotifications})` : ""}
-            </button>
-          </div>
-        </div>
-      </header>
-
-      {/* MAIN CONTENT */}
       <div className="main-content">
+        {activeSection === "home" ? (
+          <HomeSection
+            dashboard={dashboard}
+            unreadNotifications={unreadNotifications}
+            recentDocuments={recentDocuments}
+            notifications={notifications}
+            markNotificationRead={markNotificationRead}
+            setActiveSection={setActiveSection}
+          />
+        ) : null}
 
-      {activeSection === "home" ? (
-        <>
-          <section className="workspace-summary panel">
-            <div className="workspace-copy">
-              <p className="eyebrow">Operational Overview</p>
-              <h1>Ruang kerja dokumen yang lebih fokus dan cepat dipindai.</h1>
-              <p className="subtext">Pantau file penting, notifikasi, dan aktivitas tim dari satu tampilan yang lebih tenang.</p>
-            </div>
-            <div className="workspace-pills">
-              <div className="workspace-pill">
-                <small>Dokumen</small>
-                <strong>{dashboard.totalDocuments}</strong>
-              </div>
-              <div className="workspace-pill">
-                <small>User</small>
-                <strong>{dashboard.totalUsers}</strong>
-              </div>
-              <div className="workspace-pill">
-                <small>Notif</small>
-                <strong>{unreadNotifications}</strong>
-              </div>
-            </div>
-          </section>
+        {activeSection === "documents" ? (
+          <DocumentsSection
+            isManagerLike={isManagerLike}
+            uploadForm={uploadForm}
+            setUploadForm={setUploadForm}
+            handleUpload={handleUpload}
+            categories={categories}
+            newCategory={newCategory}
+            setNewCategory={setNewCategory}
+            createCategory={createCategory}
+            resetFilters={resetFilters}
+            searchDocuments={searchDocuments}
+            query={query}
+            setQuery={setQuery}
+            categoryId={categoryId}
+            setCategoryId={setCategoryId}
+            dateFrom={dateFrom}
+            setDateFrom={setDateFrom}
+            dateTo={dateTo}
+            setDateTo={setDateTo}
+            paginatedDocuments={paginatedDocuments}
+            sortedDocuments={sortedDocuments}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            setCurrentPage={setCurrentPage}
+            openPreview={openPreview}
+            openVersions={openVersions}
+            downloadDocument={downloadDocument}
+          />
+        ) : null}
 
-          <section className="stats-grid">
-            <article className="modern-card">
-              <div className="card-icon">📄</div>
-              <p className="card-label">Total Dokumen</p>
-              <h3 className="card-value">{dashboard.totalDocuments}</h3>
-              <span className="card-desc">File aktif di sistem</span>
-            </article>
-            <article className="modern-card">
-              <div className="card-icon">👥</div>
-              <p className="card-label">Total Pengguna</p>
-              <h3 className="card-value">{dashboard.totalUsers}</h3>
-              <span className="card-desc">Akun workspace</span>
-            </article>
-            <article className="modern-card">
-              <div className="card-icon">⏱️</div>
-              <p className="card-label">Dokumen Terbaru</p>
-              <h3 className="card-value">{recentDocuments.length}</h3>
-              <span className="card-desc">Prioritas untuk direview</span>
-            </article>
-          </section>
+        {activeSection === "notifications" ? (
+          <NotificationsSection
+            notifications={notifications}
+            markNotificationRead={markNotificationRead}
+            isManagerLike={isManagerLike}
+            logs={logs}
+          />
+        ) : null}
 
-          <section className="dashboard-grid compact-grid">
-            <div className="stack-col">
-              <section className="panel">
-                <div className="panel-heading">
-                  <div>
-                    <p className="eyebrow">Recent Activity</p>
-                    <h3>Dokumen terbaru</h3>
-                  </div>
-                  <button type="button" className="ghost-btn" onClick={() => setActiveSection("documents")}>Lihat semua</button>
-                </div>
-                <div className="doc-list">
-                  {recentDocuments.length ? (
-                    recentDocuments.slice(0, 5).map((doc) => (
-                      <div key={doc.id} className="doc-card">
-                        <div className="doc-header">
-                          <h4>{doc.title}</h4>
-                          <span className="chip soft">{doc.category?.name}</span>
-                        </div>
-                        <div className="doc-meta">
-                          <span>📄 {doc.originalName}</span>
-                          <span>v{doc.currentVersion || 1}</span>
-                        </div>
-                        <div className="doc-footer">
-                          <small>{doc.uploadedBy?.name} • {dayjs(doc.createdAt).format("DD MMM")}</small>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="empty-state">
-                      <p>📂 Belum ada dokumen</p>
-                      <span>Mulai upload dokumen pertama Anda</span>
-                    </div>
-                  )}
-                </div>
-              </section>
-            </div>
+        {loading ? <p className="status-note">Memuat data...</p> : null}
+        {error ? <p className="error-text status-note">{error}</p> : null}
+        {success ? <p className="success-text status-note">{success}</p> : null}
 
-            <aside className="stack-col side-col">
-              <section className="panel notifications-panel">
-                <div className="panel-heading">
-                  <div>
-                    <p className="eyebrow">Quick Inbox</p>
-                    <h3>Notifikasi penting</h3>
-                  </div>
-                  <button type="button" className="ghost-btn" onClick={() => setActiveSection("notifications")}>Lihat semua</button>
-                </div>
-                <div className="notification-list">
-                  {notifications.slice(0, 5).length ? notifications.slice(0, 5).map((item) => (
-                    <button key={item.id} type="button" className={`notification-item ${item.isRead ? "read" : "unread"}`} onClick={() => markNotificationRead(item.id)}>
-                      <strong>{item.title}</strong>
-                      <span>{item.detail || "-"}</span>
-                      <small>{dayjs(item.createdAt).format("DD MMM HH:mm")}</small>
-                    </button>
-                  )) : <div className="notification-item static"><strong>Belum ada notifikasi.</strong></div>}
-                </div>
-              </section>
-            </aside>
-          </section>
-        </>
-      ) : null}
+        <PreviewModal
+          previewModal={previewModal}
+          closeModal={closeModal}
+          documentShares={documentShares}
+          documentVersions={documentVersions}
+          versionDrafts={versionDrafts}
+          setVersionDrafts={setVersionDrafts}
+          uploadVersion={uploadVersion}
+          shareDrafts={shareDrafts}
+          setShareDrafts={setShareDrafts}
+          users={users}
+          user={user}
+          shareDocument={shareDocument}
+        />
 
-      {activeSection === "documents" ? (
-        <section className="dashboard-grid">
-          <div className="stack-col">
-            <section className="panel">
-              <div className="panel-heading">
-                <div>
-                  <p className="eyebrow">Upload</p>
-                  <h3>Tambah dokumen baru</h3>
-                </div>
-              </div>
-              <form className="form-inline upload-form" onSubmit={handleUpload}>
-                <input placeholder="Judul dokumen" value={uploadForm.title} onChange={(e) => setUploadForm((p) => ({ ...p, title: e.target.value }))} required />
-                <select value={uploadForm.categoryId} onChange={(e) => setUploadForm((p) => ({ ...p, categoryId: e.target.value }))} required>
-                  <option value="">Pilih kategori</option>
-                  {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
-                </select>
-                <input placeholder="Tag, pisahkan koma" value={uploadForm.tags} onChange={(e) => setUploadForm((p) => ({ ...p, tags: e.target.value }))} />
-                <input type="file" onChange={(e) => setUploadForm((p) => ({ ...p, file: e.target.files?.[0] || null }))} required />
-                <button type="submit">Upload</button>
-              </form>
-            </section>
+        <ToastContainer toasts={toasts} />
 
-            {isManagerLike ? (
-              <section className="panel">
-                <div className="panel-heading">
-                  <div>
-                    <p className="eyebrow">Kategori</p>
-                    <h3>Manajemen kategori</h3>
-                  </div>
-                </div>
-                <form className="form-inline compact-form" onSubmit={createCategory}>
-                  <input placeholder="Kategori baru" value={newCategory} onChange={(e) => setNewCategory(e.target.value)} />
-                  <button type="submit">Tambah</button>
-                </form>
-              </section>
-            ) : null}
-
-            <section className="panel">
-              <div className="panel-heading">
-                <div>
-                  <p className="eyebrow">Search</p>
-                  <h3>Pencarian dokumen</h3>
-                </div>
-                <div className="action-row">
-                  <button type="button" className="ghost-btn" onClick={resetFilters}>Reset filter</button>
-                  <button type="button" onClick={searchDocuments}>Cari</button>
-                </div>
-              </div>
-              <div className="search-box">
-                <span aria-hidden="true">🔍</span>
-                <input placeholder="Cari dokumen..." value={query} onChange={(e) => setQuery(e.target.value)} />
-              </div>
-              <div className="form-inline search-form">
-                <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
-                  <option value="">Semua kategori</option>
-                  {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
-                </select>
-                <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
-                <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
-              </div>
-            </section>
-
-            <section className="panel">
-              <div className="panel-heading">
-                <div>
-                  <p className="eyebrow">Dokumen</p>
-                  <h3>Daftar dokumen</h3>
-                </div>
-                <span className="chip">Preview PDF • Versioning • Share</span>
-              </div>
-              <div className="doc-list">
-                {paginatedDocuments.length ? (
-                  paginatedDocuments.map((doc) => (
-                    <div key={doc.id} className="doc-card interactive">
-                      <div className="doc-header">
-                        <h4>{doc.title}</h4>
-                        <span className="chip soft">{doc.category?.name}</span>
-                      </div>
-                      <div className="doc-meta">
-                        <span>{doc.originalName}</span>
-                        <span>v{doc.currentVersion || 1}</span>
-                        {doc.tags?.length > 0 && <span>{doc.tags.map((tag) => tag.name).join(", ").slice(0, 24)}</span>}
-                      </div>
-                      <div className="doc-footer">
-                        <small>{doc.uploadedBy?.name} • {dayjs(doc.createdAt).format("DD MMM YYYY")}</small>
-                        <div className="doc-actions">
-                          {doc.mimeType === "application/pdf" ? (
-                            <button type="button" className="ghost-btn small" onClick={() => openPreview(doc)}>Preview</button>
-                          ) : null}
-                          <button type="button" className="ghost-btn small" onClick={() => openVersions(doc)}>Versi</button>
-                          <button type="button" className="ghost-btn small" onClick={() => downloadDocument(doc.id, doc.originalName)}>Download</button>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="empty-state">
-                    <p>📂 Belum ada dokumen</p>
-                    <span>Mulai upload dokumen pertama Anda</span>
-                  </div>
-                )}
-              </div>
-              {sortedDocuments.length > 0 ? (
-                <div className="pagination-controls">
-                  <button type="button" className="ghost-btn" onClick={() => setCurrentPage(Math.max(1, currentPage - 1))} disabled={currentPage === 1}>← Sebelumnya</button>
-                  <span className="page-info">Halaman {currentPage} dari {totalPages} • {paginatedDocuments.length} / {sortedDocuments.length}</span>
-                  <button type="button" className="ghost-btn" onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))} disabled={currentPage === totalPages}>Selanjutnya →</button>
-                </div>
-              ) : null}
-            </section>
-          </div>
-
-          <aside className="stack-col side-col">
-            <section className="panel notifications-panel">
-              <div className="panel-heading">
-                <div>
-                  <p className="eyebrow">Tips</p>
-                  <h3>Alur rekomendasi</h3>
-                </div>
-              </div>
-              <div className="notification-list">
-                <div className="notification-item static"><strong>1. Upload</strong><span>Masukkan judul, kategori, dan file.</span></div>
-                <div className="notification-item static"><strong>2. Review</strong><span>Preview dulu sebelum dibagikan.</span></div>
-                <div className="notification-item static"><strong>3. Revisi</strong><span>Tambah versi baru saat ada update.</span></div>
-                <div className="notification-item static"><strong>4. Share</strong><span>Kirim ke user yang relevan.</span></div>
-              </div>
-            </section>
-          </aside>
-        </section>
-      ) : null}
-
-      {activeSection === "notifications" ? (
-        <section className="dashboard-grid single-view-grid">
-          <div className="stack-col">
-            <section className="panel notifications-panel">
-              <div className="panel-heading">
-                <div>
-                  <p className="eyebrow">Notifications</p>
-                  <h3>Notifikasi terbaru</h3>
-                </div>
-              </div>
-              <div className="notification-list">
-                {notifications.length ? notifications.map((item) => (
-                  <button key={item.id} type="button" className={`notification-item ${item.isRead ? "read" : "unread"}`} onClick={() => markNotificationRead(item.id)}>
-                    <strong>{item.title}</strong>
-                    <span>{item.detail || "-"}</span>
-                    <small>{dayjs(item.createdAt).format("DD MMM YYYY HH:mm")}</small>
-                  </button>
-                )) : <div className="notification-item static"><strong>Tidak ada notifikasi.</strong><span>Notifikasi akan muncul setelah upload/share dokumen.</span></div>}
-              </div>
-            </section>
-
-            {isManagerLike ? (
-              <section className="panel">
-                <div className="panel-heading">
-                  <div>
-                    <p className="eyebrow">Activity</p>
-                    <h3>Log sistem</h3>
-                  </div>
-                </div>
-                <div className="notification-list logs-list">
-                  {logs.length ? logs.map((item) => (
-                    <div key={item.id} className="notification-item static">
-                      <strong>{item.action}</strong>
-                      <span>{item.detail || "-"}</span>
-                      <small>{item.user?.name} • {dayjs(item.timestamp).format("DD MMM HH:mm")}</small>
-                    </div>
-                  )) : <div className="notification-item static"><strong>Belum ada log aktivitas.</strong></div>}
-                </div>
-              </section>
-            ) : null}
-          </div>
-        </section>
-      ) : null}
-
-      {loading ? <p className="status-note">Memuat data...</p> : null}
-      {error ? <p className="error-text status-note">{error}</p> : null}
-      {success ? <p className="success-text status-note">{success}</p> : null}
-
-      {previewModal.type ? (
-        <div className="modal-backdrop" onClick={closeModal} role="presentation">
-          <section className="modal-card" onClick={(event) => event.stopPropagation()}>
-            <div className="modal-header">
-              <div>
-                <p className="eyebrow">{previewModal.type === "preview" ? "Preview PDF" : previewModal.type === "versions" ? "Versioning" : "Detail"}</p>
-                <h3>{previewModal.document?.title}</h3>
-              </div>
-              <button className="ghost-btn" type="button" onClick={closeModal}>Tutup</button>
-            </div>
-
-            {previewModal.type === "preview" ? (
-              <iframe className="preview-frame" title="PDF preview" src={previewModal.blobUrl} />
-            ) : null}
-
-            {previewModal.type === "detail" ? (
-              <div className="detail-grid">
-                <div><span>File</span><strong>{previewModal.document?.originalName}</strong></div>
-                <div><span>Kategori</span><strong>{previewModal.document?.category?.name}</strong></div>
-                <div><span>Versi</span><strong>v{previewModal.document?.currentVersion || 1}</strong></div>
-                <div><span>Uploader</span><strong>{previewModal.document?.uploadedBy?.name}</strong></div>
-              </div>
-            ) : null}
-
-            {previewModal.type === "versions" ? (
-              <div className="modal-stack">
-                <div className="detail-grid compact">
-                  <div><span>File</span><strong>{previewModal.document?.originalName}</strong></div>
-                  <div><span>Kategori</span><strong>{previewModal.document?.category?.name}</strong></div>
-                  <div><span>Versi sekarang</span><strong>v{previewModal.document?.currentVersion || 1}</strong></div>
-                  <div><span>Share</span><strong>{documentShares.length} kali</strong></div>
-                </div>
-
-                <section className="subpanel">
-                  <h4>Tambah versi baru</h4>
-                  <div className="form-inline version-form">
-                    <input
-                      type="file"
-                      onChange={(e) =>
-                        setVersionDrafts((current) => ({
-                          ...current,
-                          [previewModal.document.id]: { file: e.target.files?.[0] || null },
-                        }))
-                      }
-                    />
-                    <button type="button" onClick={() => uploadVersion(previewModal.document.id)}>Upload versi</button>
-                  </div>
-                </section>
-
-                <section className="subpanel">
-                  <h4>Share ke user</h4>
-                  <div className="form-inline share-form">
-                    <select
-                      value={shareDrafts[previewModal.document.id]?.sharedToId || ""}
-                      onChange={(e) =>
-                        setShareDrafts((current) => ({
-                          ...current,
-                          [previewModal.document.id]: {
-                            ...(current[previewModal.document.id] || {}),
-                            sharedToId: e.target.value,
-                          },
-                        }))
-                      }
-                    >
-                      <option value="">Pilih user</option>
-                      {users
-                        .filter((candidate) => candidate.id !== user.id)
-                        .map((candidate) => (
-                          <option key={candidate.id} value={candidate.id}>
-                            {candidate.name} • {candidate.role}
-                          </option>
-                        ))}
-                    </select>
-                    <input
-                      placeholder="Pesan share"
-                      value={shareDrafts[previewModal.document.id]?.message || ""}
-                      onChange={(e) =>
-                        setShareDrafts((current) => ({
-                          ...current,
-                          [previewModal.document.id]: {
-                            ...(current[previewModal.document.id] || {}),
-                            message: e.target.value,
-                          },
-                        }))
-                      }
-                    />
-                    <button type="button" onClick={() => shareDocument(previewModal.document.id)}>Share</button>
-                  </div>
-                </section>
-
-                <section className="subpanel timeline-box">
-                  <h4>Riwayat versi</h4>
-                  <div className="timeline-list">
-                    {documentVersions.map((version) => (
-                      <div key={version.id} className="timeline-item">
-                        <strong>v{version.versionNumber}</strong>
-                        <span>{version.originalName}</span>
-                        <small>{version.uploadedBy?.name} • {dayjs(version.createdAt).format("DD MMM YYYY HH:mm")}</small>
-                      </div>
-                    ))}
-                  </div>
-                </section>
-
-                <section className="subpanel timeline-box">
-                  <h4>Riwayat share</h4>
-                  <div className="timeline-list">
-                    {documentShares.map((share) => (
-                      <div key={share.id} className="timeline-item">
-                        <strong>{share.sharedTo?.name}</strong>
-                        <span>{share.message || "Tanpa pesan"}</span>
-                        <small>{share.sharedBy?.name} • {dayjs(share.createdAt).format("DD MMM YYYY HH:mm")}</small>
-                      </div>
-                    ))}
-                  </div>
-                </section>
-              </div>
-            ) : null}
-          </section>
-        </div>
-      ) : null}
-
-      {/* Toast Notifications Container */}
-      <div className="toast-container">
-        {toasts.map((toast) => (
-          <div key={toast.id} className={`toast toast-${toast.type}`}>
-            {toast.message}
-          </div>
-        ))}
+        <OnboardingOverlay
+          showOnboarding={showOnboarding}
+          token={token}
+          activeSection={activeSection}
+          dismissOnboarding={dismissOnboarding}
+        />
       </div>
-
-      {/* Onboarding Overlay */}
-      {showOnboarding && token && activeSection === "documents" ? (
-        <div className="onboarding-overlay">
-          <div className="onboarding-card">
-            <div className="onboarding-header">
-              <h2>👋 Selamat datang di FileTrack!</h2>
-              <button type="button" className="ghost-btn close-onboarding" onClick={dismissOnboarding}>✕</button>
-            </div>
-            <div className="onboarding-steps">
-              <div className="onboarding-step">
-                <span className="step-number">1</span>
-                <div>
-                  <strong>Upload Dokumen</strong>
-                  <p>Isi judul, pilih kategori, dan upload file PDF/DOCX/XLSX Anda.</p>
-                </div>
-              </div>
-              <div className="onboarding-step">
-                <span className="step-number">2</span>
-                <div>
-                  <strong>Cari & Filter</strong>
-                  <p>Gunakan kolom pencarian untuk menemukan dokumen berdasarkan nama, kategori, atau tanggal.</p>
-                </div>
-              </div>
-              <div className="onboarding-step">
-                <span className="step-number">3</span>
-                <div>
-                  <strong>Preview & Versi</strong>
-                  <p>Lihat PDF langsung dan kelola versioning untuk melacak perubahan file.</p>
-                </div>
-              </div>
-              <div className="onboarding-step">
-                <span className="step-number">4</span>
-                <div>
-                  <strong>Bagikan ke Tim</strong>
-                  <p>Klik Versi untuk berbagi dokumen dengan rekan kerja dan kirim pesan.</p>
-                </div>
-              </div>
-            </div>
-            <button type="button" onClick={dismissOnboarding}>Mengerti!</button>
-          </div>
-        </div>
-      ) : null}
-      </div>
-      {/* END MAIN CONTENT */}
     </main>
   );
 }
