@@ -1,55 +1,95 @@
-/* App.css — supplemental styles for FileTrack redesign */
+.app {
+  display: flex;
+}
 
-/* Counter (kept from original, adapted) */
-.counter {
-  font-size: 15px;
-  padding: 6px 12px;
-  border-radius: 8px;
-  color: var(--teal);
-  background: var(--teal-dim);
-  border: 1px solid rgba(0,255,200,0.2);
-  transition: border-color 0.2s;
+/* SIDEBAR */
+.sidebar {
+  width: 240px;
+  height: 100vh;
+  background: #0f172a;
+  color: white;
+  padding: 20px;
+}
+
+.sidebar h2 {
   margin-bottom: 20px;
-  font-family: "DM Mono", monospace;
-}
-.counter:hover { border-color: rgba(0,255,200,0.4); }
-.counter:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
-
-/* Hero layout refinements */
-.hero { position: relative; }
-.hero .base, .hero .framework, .hero .vite { inset-inline: 0; margin: 0 auto; }
-.hero .base { width: 170px; position: relative; z-index: 0; }
-.hero .framework, .hero .vite { position: absolute; }
-.hero .framework {
-  z-index: 1; top: 34px; height: 28px;
-  transform: perspective(2000px) rotateZ(300deg) rotateX(44deg) rotateY(39deg) scale(1.4);
-}
-.hero .vite {
-  z-index: 0; top: 107px; height: 26px; width: auto;
-  transform: perspective(2000px) rotateZ(300deg) rotateX(40deg) rotateY(39deg) scale(0.8);
 }
 
-/* Ticks decorative element */
-.ticks {
-  position: relative;
+.sidebar button {
+  display: block;
   width: 100%;
+  margin-bottom: 10px;
+  background: transparent;
+  color: white;
+  border: none;
+  padding: 10px;
+  text-align: left;
+  cursor: pointer;
 }
-.ticks::before, .ticks::after {
-  content: '';
-  position: absolute;
-  top: -4.5px;
-  border: 5px solid transparent;
-}
-.ticks::before { left: 0; border-left-color: var(--border); }
-.ticks::after { right: 0; border-right-color: var(--border); }
 
-/* Logs list */
-.logs-list .notification-item.static {
-  border-color: var(--border);
-  background: var(--bg-3);
+.sidebar button:hover {
+  background: #1e293b;
 }
-.logs-list .notification-item.static strong {
-  color: var(--teal);
-  font-family: "DM Mono", monospace;
-  font-size: 0.82rem;
+
+/* MAIN */
+.main {
+  flex: 1;
+  padding: 20px;
+  background: #f8fafc;
+}
+
+/* TOPBAR */
+.topbar {
+  margin-bottom: 20px;
+}
+
+/* DASHBOARD */
+.grid {
+  display: flex;
+  gap: 20px;
+}
+
+.card {
+  flex: 1;
+  padding: 20px;
+  background: white;
+  border-radius: 10px;
+}
+
+/* SEARCH */
+.search {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.search input {
+  flex: 1;
+  padding: 10px;
+}
+
+/* DOC */
+.doc-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+}
+
+.doc-card {
+  background: white;
+  padding: 15px;
+  border-radius: 10px;
+}
+
+.actions {
+  margin-top: 10px;
+  display: flex;
+  gap: 10px;
+}
+
+/* NOTIF */
+.notif {
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
 }
