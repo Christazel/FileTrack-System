@@ -76,6 +76,18 @@ function App() {
   const [documentShares, setDocumentShares] = useState([]);
   const [activeSection, setActiveSection] = useState("home");
 
+  // Pagination and sorting
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [sortBy, setSortBy] = useState("createdAt");
+  const [sortOrder, setSortOrder] = useState("desc");
+
+  // Toast notifications
+  const [toasts, setToasts] = useState([]);
+
+  // Onboarding
+  const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem("filetrack_onboarding_seen"));
+
   const headers = useMemo(() => ({ Authorization: `Bearer ${token}` }), [token]);
   const isManagerLike = user?.role === "ADMIN" || user?.role === "MANAGER";
 
@@ -134,7 +146,7 @@ function App() {
       setNotifications(notificationsRes.data);
       setLogs(logsRes?.data?.items || []);
     } catch (requestError) {
-      setError(requestError.response?.data?.message || "Gagal mengambil data.");
+      showToast(requestError.response?.data?.message || "Gagal mengambil data.", "error");
     } finally {
       setLoading(false);
     }
@@ -169,9 +181,9 @@ function App() {
 
       setToken(nextToken);
       setUser(nextUser);
-      setSuccess("Login berhasil.");
+      showToast("Login berhasil.");
     } catch (requestError) {
-      setError(requestError.response?.data?.message || "Login gagal.");
+      showToast(requestError.response?.data?.message || "Login gagal.", "error");
     }
   }
 
@@ -187,6 +199,63 @@ function App() {
     setPreviewModal(emptyDocumentModal);
   }
 
+  // Helper: Show toast notification
+  function showToast(message, type = "success") {
+    const toastId = Date.now();
+    const newToast = { id: toastId, message, type };
+    setToasts((prev) => [...prev, newToast]);
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== toastId));
+    }, 3000);
+  }
+
+  // Helper: Handle sort column click
+  function handleSortClick(column) {
+    if (sortBy === column) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortBy(column);
+      setSortOrder("asc");
+    }
+    setCurrentPage(1);
+  }
+
+  // Helper: Get sorted and paginated documents
+  const sortedDocuments = useMemo(() => {
+    const sorted = [...documents].sort((a, b) => {
+      let aVal = a[sortBy];
+      let bVal = b[sortBy];
+
+      if (sortBy === "createdAt" || sortBy === "updatedAt") {
+        aVal = new Date(a[sortBy]);
+        bVal = new Date(b[sortBy]);
+      }
+
+      if (typeof aVal === "string") {
+        aVal = aVal.toLowerCase();
+        bVal = bVal.toLowerCase();
+      }
+
+      if (aVal < bVal) return sortOrder === "asc" ? -1 : 1;
+      if (aVal > bVal) return sortOrder === "asc" ? 1 : -1;
+      return 0;
+    });
+    return sorted;
+  }, [documents, sortBy, sortOrder]);
+
+  const totalPages = Math.ceil(sortedDocuments.length / pageSize);
+  const paginatedDocuments = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return sortedDocuments.slice(start, start + pageSize);
+  }, [sortedDocuments, currentPage, pageSize]);
+
+  // Helper: Dismiss onboarding
+  function dismissOnboarding() {
+    localStorage.setItem("filetrack_onboarding_seen", "true");
+    setShowOnboarding(false);
+    showToast("Panduan ditutup. Anda dapat melihatnya kembali di menu.", "info");
+  }
+
   async function searchDocuments() {
     const params = {
       ...(query ? { q: query } : {}),
@@ -199,7 +268,7 @@ function App() {
       const response = await api.get("/documents", { headers, params });
       setDocuments(response.data);
     } catch (requestError) {
-      setError(requestError.response?.data?.message || "Pencarian gagal.");
+      showToast(requestError.response?.data?.message || "Pencarian gagal.", "error");
     }
   }
 
@@ -220,10 +289,10 @@ function App() {
       });
 
       setUploadForm({ title: "", categoryId: "", tags: "", file: null });
-      setSuccess("Dokumen berhasil diunggah.");
+      showToast("Dokumen berhasil diunggah.");
       await loadData();
     } catch (requestError) {
-      setError(requestError.response?.data?.message || "Upload gagal.");
+      showToast(requestError.response?.data?.message || "Upload gagal.", "error");
     }
   }
 
@@ -236,10 +305,10 @@ function App() {
     try {
       await api.post("/categories", { name: newCategory.trim() }, { headers });
       setNewCategory("");
-      setSuccess("Kategori berhasil ditambahkan.");
+      showToast("Kategori berhasil ditambahkan.");
       await loadData();
     } catch (requestError) {
-      setError(requestError.response?.data?.message || "Gagal membuat kategori.");
+      showToast(requestError.response?.data?.message || "Gagal membuat kategori.", "error");
     }
   }
 
@@ -257,10 +326,10 @@ function App() {
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
-      setSuccess("Download berhasil.");
+      showToast("Download berhasil.");
       await loadData();
     } catch (requestError) {
-      setError(requestError.response?.data?.message || "Gagal download dokumen.");
+      showToast(requestError.response?.data?.message || "Gagal download dokumen.", "error");
     }
   }
 
@@ -282,7 +351,7 @@ function App() {
       const blobUrl = URL.createObjectURL(new Blob([response.data], { type: "application/pdf" }));
       setPreviewModal({ type: "preview", document: doc, blobUrl });
     } catch (requestError) {
-      setError(requestError.response?.data?.message || "Gagal memuat preview.");
+      showToast(requestError.response?.data?.message || "Gagal memuat preview.", "error");
     }
   }
 
@@ -298,14 +367,14 @@ function App() {
       setDocumentShares(sharesRes.data);
       setPreviewModal({ type: "versions", document: activeDocument, blobUrl: "" });
     } catch (requestError) {
-      setError(requestError.response?.data?.message || "Gagal memuat versi dokumen.");
+      showToast(requestError.response?.data?.message || "Gagal memuat versi dokumen.", "error");
     }
   }
 
   async function uploadVersion(docId) {
     const draft = versionDrafts[docId];
     if (!draft?.file) {
-      setError("Pilih file versi baru terlebih dahulu.");
+      showToast("Pilih file versi baru terlebih dahulu.", "error");
       return;
     }
 
@@ -320,18 +389,18 @@ function App() {
         },
       });
       setVersionDrafts((current) => ({ ...current, [docId]: { file: null } }));
-      setSuccess("Versi baru berhasil ditambahkan.");
+      showToast("Versi baru berhasil ditambahkan.");
       await loadData();
       await openVersions(docId);
     } catch (requestError) {
-      setError(requestError.response?.data?.message || "Gagal menambah versi.");
+      showToast(requestError.response?.data?.message || "Gagal menambah versi.", "error");
     }
   }
 
   async function shareDocument(docId) {
     const draft = shareDrafts[docId];
     if (!draft?.sharedToId) {
-      setError("Pilih user tujuan terlebih dahulu.");
+      showToast("Pilih user tujuan terlebih dahulu.", "error");
       return;
     }
 
@@ -345,11 +414,11 @@ function App() {
         { headers },
       );
       setShareDrafts((current) => ({ ...current, [docId]: { sharedToId: "", message: "" } }));
-      setSuccess("Dokumen berhasil dibagikan.");
+      showToast("Dokumen berhasil dibagikan.");
       await loadData();
       await openVersions(docId);
     } catch (requestError) {
-      setError(requestError.response?.data?.message || "Gagal membagikan dokumen.");
+      showToast(requestError.response?.data?.message || "Gagal membagikan dokumen.", "error");
     }
   }
 
@@ -358,7 +427,7 @@ function App() {
       await api.patch(`/notifications/${notificationId}/read`, {}, { headers });
       await loadData();
     } catch (requestError) {
-      setError(requestError.response?.data?.message || "Gagal memperbarui notifikasi.");
+      showToast(requestError.response?.data?.message || "Gagal memperbarui notifikasi.", "error");
     }
   }
 
@@ -367,13 +436,13 @@ function App() {
       await api.patch("/notifications/read-all", {}, { headers });
       await loadData();
     } catch (requestError) {
-      setError(requestError.response?.data?.message || "Gagal menandai notifikasi.");
+      showToast(requestError.response?.data?.message || "Gagal menandai notifikasi.", "error");
     }
   }
 
   async function refreshAll() {
     await loadData();
-    setSuccess("Data terbaru berhasil dimuat.");
+    showToast("Data terbaru berhasil dimuat.");
   }
 
   function resetFilters() {
@@ -666,18 +735,22 @@ function App() {
                 <table>
                   <thead>
                     <tr>
-                      <th>Judul</th>
+                      <th style={{ cursor: "pointer" }} onClick={() => handleSortClick("title")}>
+                        Judul {sortBy === "title" ? (sortOrder === "asc" ? "↑" : "↓") : ""}
+                      </th>
                       <th>File</th>
                       <th>Kategori</th>
                       <th>Versi</th>
                       <th>Tag</th>
                       <th>Uploader</th>
-                      <th>Tanggal</th>
+                      <th style={{ cursor: "pointer" }} onClick={() => handleSortClick("createdAt")}>
+                        Tanggal {sortBy === "createdAt" ? (sortOrder === "asc" ? "↑" : "↓") : ""}
+                      </th>
                       <th>Aksi</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {documents.length ? documents.map((doc) => (
+                    {paginatedDocuments.length ? paginatedDocuments.map((doc) => (
                       <tr key={doc.id}>
                         <td>{doc.title}</td>
                         <td>{doc.originalName}</td>
@@ -700,6 +773,13 @@ function App() {
                   </tbody>
                 </table>
               </div>
+              {sortedDocuments.length > 0 ? (
+                <div className="pagination-controls">
+                  <button type="button" className="ghost-btn" onClick={() => setCurrentPage(Math.max(1, currentPage - 1))} disabled={currentPage === 1}>Sebelumnya</button>
+                  <span className="page-info">Halaman {currentPage} dari {totalPages} • Menampilkan {paginatedDocuments.length} dari {sortedDocuments.length} dokumen</span>
+                  <button type="button" className="ghost-btn" onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))} disabled={currentPage === totalPages}>Selanjutnya</button>
+                </div>
+              ) : null}
             </section>
           </div>
 
@@ -888,6 +968,58 @@ function App() {
               </div>
             ) : null}
           </section>
+        </div>
+      ) : null}
+
+      {/* Toast Notifications Container */}
+      <div className="toast-container">
+        {toasts.map((toast) => (
+          <div key={toast.id} className={`toast toast-${toast.type}`}>
+            {toast.message}
+          </div>
+        ))}
+      </div>
+
+      {/* Onboarding Overlay */}
+      {showOnboarding && token && activeSection === "documents" ? (
+        <div className="onboarding-overlay">
+          <div className="onboarding-card">
+            <div className="onboarding-header">
+              <h2>👋 Selamat datang di FileTrack!</h2>
+              <button type="button" className="ghost-btn close-onboarding" onClick={dismissOnboarding}>✕</button>
+            </div>
+            <div className="onboarding-steps">
+              <div className="onboarding-step">
+                <span className="step-number">1</span>
+                <div>
+                  <strong>Upload Dokumen</strong>
+                  <p>Isi judul, pilih kategori, dan upload file PDF/DOCX/XLSX Anda.</p>
+                </div>
+              </div>
+              <div className="onboarding-step">
+                <span className="step-number">2</span>
+                <div>
+                  <strong>Cari & Filter</strong>
+                  <p>Gunakan kolom pencarian untuk menemukan dokumen berdasarkan nama, kategori, atau tanggal.</p>
+                </div>
+              </div>
+              <div className="onboarding-step">
+                <span className="step-number">3</span>
+                <div>
+                  <strong>Preview & Versi</strong>
+                  <p>Lihat PDF langsung dan kelola versioning untuk melacak perubahan file.</p>
+                </div>
+              </div>
+              <div className="onboarding-step">
+                <span className="step-number">4</span>
+                <div>
+                  <strong>Bagikan ke Tim</strong>
+                  <p>Klik Versi untuk berbagi dokumen dengan rekan kerja dan kirim pesan.</p>
+                </div>
+              </div>
+            </div>
+            <button type="button" onClick={dismissOnboarding}>Mengerti!</button>
+          </div>
         </div>
       ) : null}
     </main>
