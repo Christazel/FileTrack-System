@@ -42,13 +42,34 @@ export default function DocumentsSection({
             </div>
           </div>
           <form className="form-inline upload-form" onSubmit={handleUpload}>
-            <input placeholder="Judul dokumen" value={uploadForm.title} onChange={(e) => setUploadForm((p) => ({ ...p, title: e.target.value }))} required />
-            <select value={uploadForm.categoryId} onChange={(e) => setUploadForm((p) => ({ ...p, categoryId: e.target.value }))} required>
+            <input
+              placeholder="Judul dokumen"
+              value={uploadForm.title}
+              onChange={(e) => setUploadForm((p) => ({ ...p, title: e.target.value }))}
+              required
+            />
+            <select
+              value={uploadForm.categoryId}
+              onChange={(e) => setUploadForm((p) => ({ ...p, categoryId: e.target.value }))}
+              required
+            >
               <option value="">Pilih kategori</option>
-              {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
+              {categories.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
             </select>
-            <input placeholder="Tag, pisahkan koma" value={uploadForm.tags} onChange={(e) => setUploadForm((p) => ({ ...p, tags: e.target.value }))} />
-            <input type="file" onChange={(e) => setUploadForm((p) => ({ ...p, file: e.target.files?.[0] || null }))} required />
+            <input
+              placeholder="Tag, pisahkan koma"
+              value={uploadForm.tags}
+              onChange={(e) => setUploadForm((p) => ({ ...p, tags: e.target.value }))}
+            />
+            <input
+              type="file"
+              onChange={(e) => setUploadForm((p) => ({ ...p, file: e.target.files?.[0] || null }))}
+              required
+            />
             <button type="submit">Upload</button>
           </form>
         </section>
@@ -62,7 +83,11 @@ export default function DocumentsSection({
               </div>
             </div>
             <form className="form-inline compact-form" onSubmit={createCategory}>
-              <input placeholder="Kategori baru" value={newCategory} onChange={(e) => setNewCategory(e.target.value)} />
+              <input
+                placeholder="Kategori baru"
+                value={newCategory}
+                onChange={(e) => setNewCategory(e.target.value)}
+              />
               <button type="submit">Tambah</button>
             </form>
           </section>
@@ -75,18 +100,30 @@ export default function DocumentsSection({
               <h3>Pencarian dokumen</h3>
             </div>
             <div className="action-row">
-              <button type="button" className="ghost-btn" onClick={resetFilters}>Reset filter</button>
-              <button type="button" onClick={searchDocuments}>Cari</button>
+              <button type="button" className="ghost-btn" onClick={resetFilters}>
+                Reset filter
+              </button>
+              <button type="button" onClick={searchDocuments}>
+                Cari
+              </button>
             </div>
           </div>
           <div className="search-box">
             <span aria-hidden="true">🔍</span>
-            <input placeholder="Cari dokumen..." value={query} onChange={(e) => setQuery(e.target.value)} />
+            <input
+              placeholder="Cari dokumen..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
           </div>
           <div className="form-inline search-form">
             <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
               <option value="">Semua kategori</option>
-              {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
+              {categories.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
             </select>
             <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
             <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
@@ -112,16 +149,38 @@ export default function DocumentsSection({
                   <div className="doc-meta">
                     <span>{doc.originalName}</span>
                     <span>v{doc.currentVersion || 1}</span>
-                    {doc.tags?.length > 0 && <span>{doc.tags.map((tag) => tag.name).join(", ").slice(0, 24)}</span>}
+                    {doc.tags?.length > 0 ? (
+                      <span>{doc.tags.map((tag) => tag.name).join(", ").slice(0, 24)}</span>
+                    ) : null}
                   </div>
                   <div className="doc-footer">
-                    <small>{doc.uploadedBy?.name} • {dayjs(doc.createdAt).format("DD MMM YYYY")}</small>
+                    <small>
+                      {doc.uploadedBy?.name} • {dayjs(doc.createdAt).format("DD MMM YYYY")}
+                    </small>
                     <div className="doc-actions">
                       {doc.mimeType === "application/pdf" ? (
-                        <button type="button" className="ghost-btn small" onClick={() => openPreview(doc)}>Preview</button>
+                        <button
+                          type="button"
+                          className="ghost-btn small"
+                          onClick={() => openPreview(doc)}
+                        >
+                          Preview
+                        </button>
                       ) : null}
-                      <button type="button" className="ghost-btn small" onClick={() => openVersions(doc)}>Versi</button>
-                      <button type="button" className="ghost-btn small" onClick={() => downloadDocument(doc.id, doc.originalName)}>Download</button>
+                      <button
+                        type="button"
+                        className="ghost-btn small"
+                        onClick={() => openVersions(doc)}
+                      >
+                        Versi
+                      </button>
+                      <button
+                        type="button"
+                        className="ghost-btn small"
+                        onClick={() => downloadDocument(doc.id, doc.originalName)}
+                      >
+                        Download
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -135,9 +194,25 @@ export default function DocumentsSection({
           </div>
           {sortedDocuments.length > 0 ? (
             <div className="pagination-controls">
-              <button type="button" className="ghost-btn" onClick={() => setCurrentPage(Math.max(1, currentPage - 1))} disabled={currentPage === 1}>← Sebelumnya</button>
-              <span className="page-info">Halaman {currentPage} dari {totalPages} • {paginatedDocuments.length} / {sortedDocuments.length}</span>
-              <button type="button" className="ghost-btn" onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))} disabled={currentPage === totalPages}>Selanjutnya →</button>
+              <button
+                type="button"
+                className="ghost-btn"
+                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
+              >
+                ← Sebelumnya
+              </button>
+              <span className="page-info">
+                Halaman {currentPage} dari {totalPages} • {paginatedDocuments.length} / {sortedDocuments.length}
+              </span>
+              <button
+                type="button"
+                className="ghost-btn"
+                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                disabled={currentPage === totalPages}
+              >
+                Selanjutnya →
+              </button>
             </div>
           ) : null}
         </section>
@@ -151,13 +226,31 @@ export default function DocumentsSection({
                 <p className="eyebrow">Tips</p>
                 <h3>Alur rekomendasi</h3>
               </div>
-              <button type="button" className="ghost-btn tips-toggle-btn" onClick={() => setShowTips(false)}>Tutup</button>
+              <button
+                type="button"
+                className="ghost-btn tips-toggle-btn"
+                onClick={() => setShowTips(false)}
+              >
+                Tutup
+              </button>
             </div>
             <div className="notification-list">
-              <div className="notification-item static"><strong>1. Upload</strong><span>Masukkan judul, kategori, dan file.</span></div>
-              <div className="notification-item static"><strong>2. Review</strong><span>Preview dulu sebelum dibagikan.</span></div>
-              <div className="notification-item static"><strong>3. Revisi</strong><span>Tambah versi baru saat ada update.</span></div>
-              <div className="notification-item static"><strong>4. Share</strong><span>Kirim ke user yang relevan.</span></div>
+              <div className="notification-item static">
+                <strong>1. Upload</strong>
+                <span>Masukkan judul, kategori, dan file.</span>
+              </div>
+              <div className="notification-item static">
+                <strong>2. Review</strong>
+                <span>Preview dulu sebelum dibagikan.</span>
+              </div>
+              <div className="notification-item static">
+                <strong>3. Revisi</strong>
+                <span>Tambah versi baru saat ada update.</span>
+              </div>
+              <div className="notification-item static">
+                <strong>4. Share</strong>
+                <span>Kirim ke user yang relevan.</span>
+              </div>
             </div>
           </section>
         ) : (
@@ -167,7 +260,13 @@ export default function DocumentsSection({
                 <p className="eyebrow">Tips</p>
                 <h3>Tips disembunyikan</h3>
               </div>
-              <button type="button" className="ghost-btn tips-toggle-btn" onClick={() => setShowTips(true)}>Tampilkan</button>
+              <button
+                type="button"
+                className="ghost-btn tips-toggle-btn"
+                onClick={() => setShowTips(true)}
+              >
+                Tampilkan
+              </button>
             </div>
             <p className="subtext">Panel tips bisa kamu tampilkan lagi kapan saja.</p>
           </section>

@@ -18,15 +18,27 @@ export default function PreviewModal({
     return null;
   }
 
+  const modalLabel =
+    previewModal.type === "preview"
+      ? "Preview PDF"
+      : previewModal.type === "versions"
+        ? "Versioning"
+        : "Detail";
+
   return (
     <div className="modal-backdrop" onClick={closeModal} role="presentation">
-      <section className="modal-card modal-card-saas" onClick={(event) => event.stopPropagation()}>
+      <section
+        className="modal-card modal-card-saas"
+        onClick={(event) => event.stopPropagation()}
+      >
         <div className="modal-header modal-header-saas">
           <div>
-            <p className="eyebrow">{previewModal.type === "preview" ? "Preview PDF" : previewModal.type === "versions" ? "Versioning" : "Detail"}</p>
+            <p className="eyebrow">{modalLabel}</p>
             <h3>{previewModal.document?.title}</h3>
           </div>
-          <button className="ghost-btn" type="button" onClick={closeModal}>Tutup</button>
+          <button className="ghost-btn" type="button" onClick={closeModal}>
+            Tutup
+          </button>
         </div>
 
         {previewModal.type === "preview" ? (
@@ -35,20 +47,44 @@ export default function PreviewModal({
 
         {previewModal.type === "detail" ? (
           <div className="detail-grid">
-            <div><span>File</span><strong>{previewModal.document?.originalName}</strong></div>
-            <div><span>Kategori</span><strong>{previewModal.document?.category?.name}</strong></div>
-            <div><span>Versi</span><strong>v{previewModal.document?.currentVersion || 1}</strong></div>
-            <div><span>Uploader</span><strong>{previewModal.document?.uploadedBy?.name}</strong></div>
+            <div>
+              <span>File</span>
+              <strong>{previewModal.document?.originalName}</strong>
+            </div>
+            <div>
+              <span>Kategori</span>
+              <strong>{previewModal.document?.category?.name}</strong>
+            </div>
+            <div>
+              <span>Versi</span>
+              <strong>v{previewModal.document?.currentVersion || 1}</strong>
+            </div>
+            <div>
+              <span>Uploader</span>
+              <strong>{previewModal.document?.uploadedBy?.name}</strong>
+            </div>
           </div>
         ) : null}
 
         {previewModal.type === "versions" ? (
           <div className="modal-stack">
             <div className="detail-grid compact">
-              <div><span>File</span><strong>{previewModal.document?.originalName}</strong></div>
-              <div><span>Kategori</span><strong>{previewModal.document?.category?.name}</strong></div>
-              <div><span>Versi sekarang</span><strong>v{previewModal.document?.currentVersion || 1}</strong></div>
-              <div><span>Share</span><strong>{documentShares.length} kali</strong></div>
+              <div>
+                <span>File</span>
+                <strong>{previewModal.document?.originalName}</strong>
+              </div>
+              <div>
+                <span>Kategori</span>
+                <strong>{previewModal.document?.category?.name}</strong>
+              </div>
+              <div>
+                <span>Versi sekarang</span>
+                <strong>v{previewModal.document?.currentVersion || 1}</strong>
+              </div>
+              <div>
+                <span>Share</span>
+                <strong>{documentShares.length} kali</strong>
+              </div>
             </div>
 
             <section className="subpanel saas-subpanel">
@@ -63,7 +99,9 @@ export default function PreviewModal({
                     }))
                   }
                 />
-                <button type="button" onClick={() => uploadVersion(previewModal.document.id)}>Upload versi</button>
+                <button type="button" onClick={() => uploadVersion(previewModal.document.id)}>
+                  Upload versi
+                </button>
               </div>
             </section>
 
@@ -104,7 +142,9 @@ export default function PreviewModal({
                     }))
                   }
                 />
-                <button type="button" onClick={() => shareDocument(previewModal.document.id)}>Share</button>
+                <button type="button" onClick={() => shareDocument(previewModal.document.id)}>
+                  Share
+                </button>
               </div>
             </section>
 
@@ -115,7 +155,9 @@ export default function PreviewModal({
                   <div key={version.id} className="timeline-item">
                     <strong>v{version.versionNumber}</strong>
                     <span>{version.originalName}</span>
-                    <small>{version.uploadedBy?.name} • {dayjs(version.createdAt).format("DD MMM YYYY HH:mm")}</small>
+                    <small>
+                      {version.uploadedBy?.name} • {dayjs(version.createdAt).format("DD MMM YYYY HH:mm")}
+                    </small>
                   </div>
                 ))}
               </div>
@@ -128,7 +170,9 @@ export default function PreviewModal({
                   <div key={share.id} className="timeline-item">
                     <strong>{share.sharedTo?.name}</strong>
                     <span>{share.message || "Tanpa pesan"}</span>
-                    <small>{share.sharedBy?.name} • {dayjs(share.createdAt).format("DD MMM YYYY HH:mm")}</small>
+                    <small>
+                      {share.sharedBy?.name} • {dayjs(share.createdAt).format("DD MMM YYYY HH:mm")}
+                    </small>
                   </div>
                 ))}
               </div>
