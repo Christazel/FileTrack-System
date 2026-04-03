@@ -1397,7 +1397,7 @@ tbody tr:hover td { color: var(--ink); }
 
 .main-content {
   margin-left: 260px;
-  margin-top: 84px;
+  margin-top: 104px;
   padding: 28px;
   width: calc(100% - 260px);
 }
@@ -1432,6 +1432,27 @@ tbody tr:hover td { color: var(--ink); }
 
 .dashboard-grid {
   gap: 18px;
+}
+
+.documents-grid {
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 320px);
+  gap: 20px;
+}
+
+.documents-side-col {
+  position: sticky;
+  top: 106px;
+  align-self: start;
+}
+
+.tips-toggle-btn {
+  min-height: 36px;
+  padding: 8px 12px;
+  font-size: 0.76rem;
+}
+
+.tips-collapsed-panel .subtext {
+  font-size: 0.9rem;
 }
 
 .panel {
@@ -1578,6 +1599,15 @@ tbody tr:hover td { color: var(--ink); }
 
   .topbar-context-hint {
     display: none;
+  }
+
+  .documents-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .documents-side-col {
+    position: static;
+    top: auto;
   }
 
   .hero-banner {

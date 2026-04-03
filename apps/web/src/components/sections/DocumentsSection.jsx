@@ -1,3 +1,4 @@
+import { useState } from "react";
 import dayjs from "dayjs";
 
 export default function DocumentsSection({
@@ -28,8 +29,10 @@ export default function DocumentsSection({
   openVersions,
   downloadDocument,
 }) {
+  const [showTips, setShowTips] = useState(true);
+
   return (
-    <section className="dashboard-grid">
+    <section className="dashboard-grid documents-grid">
       <div className="stack-col">
         <section className="panel">
           <div className="panel-heading">
@@ -140,21 +143,35 @@ export default function DocumentsSection({
         </section>
       </div>
 
-      <aside className="stack-col side-col">
-        <section className="panel notifications-panel">
-          <div className="panel-heading">
-            <div>
-              <p className="eyebrow">Tips</p>
-              <h3>Alur rekomendasi</h3>
+      <aside className="stack-col side-col documents-side-col">
+        {showTips ? (
+          <section className="panel notifications-panel">
+            <div className="panel-heading">
+              <div>
+                <p className="eyebrow">Tips</p>
+                <h3>Alur rekomendasi</h3>
+              </div>
+              <button type="button" className="ghost-btn tips-toggle-btn" onClick={() => setShowTips(false)}>Tutup</button>
             </div>
-          </div>
-          <div className="notification-list">
-            <div className="notification-item static"><strong>1. Upload</strong><span>Masukkan judul, kategori, dan file.</span></div>
-            <div className="notification-item static"><strong>2. Review</strong><span>Preview dulu sebelum dibagikan.</span></div>
-            <div className="notification-item static"><strong>3. Revisi</strong><span>Tambah versi baru saat ada update.</span></div>
-            <div className="notification-item static"><strong>4. Share</strong><span>Kirim ke user yang relevan.</span></div>
-          </div>
-        </section>
+            <div className="notification-list">
+              <div className="notification-item static"><strong>1. Upload</strong><span>Masukkan judul, kategori, dan file.</span></div>
+              <div className="notification-item static"><strong>2. Review</strong><span>Preview dulu sebelum dibagikan.</span></div>
+              <div className="notification-item static"><strong>3. Revisi</strong><span>Tambah versi baru saat ada update.</span></div>
+              <div className="notification-item static"><strong>4. Share</strong><span>Kirim ke user yang relevan.</span></div>
+            </div>
+          </section>
+        ) : (
+          <section className="panel tips-collapsed-panel">
+            <div className="panel-heading">
+              <div>
+                <p className="eyebrow">Tips</p>
+                <h3>Tips disembunyikan</h3>
+              </div>
+              <button type="button" className="ghost-btn tips-toggle-btn" onClick={() => setShowTips(true)}>Tampilkan</button>
+            </div>
+            <p className="subtext">Panel tips bisa kamu tampilkan lagi kapan saja.</p>
+          </section>
+        )}
       </aside>
     </section>
   );
