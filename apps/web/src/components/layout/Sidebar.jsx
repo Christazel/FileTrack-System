@@ -27,16 +27,6 @@ export default function Sidebar({
           <span className={`badge-role role-${user.role.toLowerCase()}`}>{user.role}</span>
           <span className="presence-pill">Online</span>
         </div>
-        <div className="sidebar-kpis">
-          <article>
-            <small>Dokumen</small>
-            <strong>{documentsCount}</strong>
-          </article>
-          <article>
-            <small>Unread</small>
-            <strong>{unreadNotifications}</strong>
-          </article>
-        </div>
       </div>
 
       <nav className="sidebar-nav">

@@ -553,6 +553,11 @@ function App() {
         {error ? <p className="error-text status-note">{error}</p> : null}
         {success ? <p className="success-text status-note">{success}</p> : null}
 
+        <footer className="app-footer">
+          <span className="app-footer-brand">FileTrack System</span>
+          <span className="app-footer-meta">© {new Date().getFullYear()} • Secure workspace documents</span>
+        </footer>
+
         <PreviewModal
           previewModal={previewModal}
           closeModal={closeModal}

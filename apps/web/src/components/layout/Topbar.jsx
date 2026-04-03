@@ -20,7 +20,7 @@ export default function Topbar({ activeSection, userName, unreadNotifications, m
           <h2 className="topbar-title">Selamat datang kembali, {userName}!</h2>
           <div className="topbar-meta">
             <span className="topbar-chip">{dayjs().format("dddd, DD MMMM YYYY")}</span>
-            <span className="topbar-chip subtle">System ready</span>
+            <span className="topbar-chip subtle">{sectionHint}</span>
           </div>
         </div>
 
