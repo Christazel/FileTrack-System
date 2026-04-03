@@ -1,4 +1,5 @@
 import dayjs from "dayjs";
+import { Bell } from "lucide-react";
 
 export default function Topbar({ activeSection, userName, unreadNotifications, markAllNotificationsRead }) {
   const sectionTitle = activeSection === "home" ? "Dashboard" : activeSection === "documents" ? "Dokumen" : "Notifikasi";
@@ -17,16 +18,13 @@ export default function Topbar({ activeSection, userName, unreadNotifications, m
             <span className="topbar-context-pill">{sectionTitle}</span>
             <span className="topbar-context-hint">{sectionHint}</span>
           </div>
-          <h2 className="topbar-title">Selamat datang kembali, {userName}!</h2>
-          <div className="topbar-meta">
-            <span className="topbar-chip">{dayjs().format("dddd, DD MMMM YYYY")}</span>
-            <span className="topbar-chip subtle">{sectionHint}</span>
-          </div>
+          <h2 className="topbar-title">Halo, {userName}</h2>
         </div>
 
         <div className="topbar-actions">
+          <span className="topbar-date">{dayjs().format("dddd, DD MMMM YYYY")}</span>
           <button className="topbar-alert-btn" type="button" onClick={markAllNotificationsRead}>
-            <span aria-hidden="true">🔔</span>
+            <Bell size={16} aria-hidden="true" />
             Tandai Dibaca
             <span className={`topbar-alert-count ${unreadNotifications > 0 ? "active" : ""}`}>{unreadNotifications}</span>
           </button>
