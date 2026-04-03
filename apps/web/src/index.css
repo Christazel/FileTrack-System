@@ -378,6 +378,22 @@ select option { background: var(--bg-2); color: var(--ink); }
 .demo-box ul { margin: 0; padding-left: 18px; color: var(--ink-2); }
 .demo-box p { color: var(--ink-3); }
 
+.demo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.demo-actions .ghost-btn {
+  padding: 8px 12px;
+  min-height: 36px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-family: var(--font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
 /* ── Proof strip ── */
 .proof-strip {
   display: grid;
