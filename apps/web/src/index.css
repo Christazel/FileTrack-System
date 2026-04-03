@@ -694,7 +694,7 @@ select option { background: var(--bg-2); color: var(--ink); }
 }
 
 .stack-col { display: grid; gap: 16px; }
-.side-col { position: sticky; top: 18px; }
+.side-col { position: sticky; top: 106px; }
 
 /* ── Panel heading ── */
 .panel-heading {
@@ -1260,10 +1260,10 @@ tbody tr:hover td { color: var(--ink); }
 }
 
 .topbar {
-  position: fixed;
+  position: sticky;
   top: 0;
-  left: 260px;
-  right: 0;
+  left: auto;
+  width: calc(100% - 260px);
   min-height: 84px;
   padding: 12px 22px;
   border-radius: 0;
@@ -1397,7 +1397,7 @@ tbody tr:hover td { color: var(--ink); }
 
 .main-content {
   margin-left: 260px;
-  margin-top: 104px;
+  margin-top: 0;
   padding: 28px;
   width: calc(100% - 260px);
 }
