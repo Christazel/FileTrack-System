@@ -1,5 +1,3 @@
-import { Bell, FileText, LayoutDashboard, LogOut, RefreshCw } from "lucide-react";
-
 export default function Sidebar({
   user,
   activeSection,
@@ -10,14 +8,9 @@ export default function Sidebar({
   logout,
 }) {
   const navItems = [
-    { key: "home", Icon: LayoutDashboard, label: "Dashboard" },
-    { key: "documents", Icon: FileText, label: "Dokumen", badge: documentsCount },
-    {
-      key: "notifications",
-      Icon: Bell,
-      label: "Notifikasi",
-      badge: unreadNotifications > 0 ? unreadNotifications : null,
-    },
+    { key: "home", icon: "🏠", label: "Dashboard" },
+    { key: "documents", icon: "📄", label: "Dokumen", badge: documentsCount },
+    { key: "notifications", icon: "🔔", label: "Notifikasi", badge: unreadNotifications > 0 ? unreadNotifications : null },
   ];
 
   return (
@@ -44,9 +37,7 @@ export default function Sidebar({
             className={`nav-btn ${activeSection === item.key ? "active" : ""}`}
             onClick={() => setActiveSection(item.key)}
           >
-            <span className="nav-icon" aria-hidden="true">
-              <item.Icon size={16} />
-            </span>
+            <span className="nav-icon" aria-hidden="true">{item.icon}</span>
             <span className="nav-label">{item.label}</span>
             {item.badge !== null && item.badge !== undefined ? (
               <span className={`nav-badge ${item.key === "notifications" ? "unread" : ""}`}>{item.badge}</span>
@@ -57,11 +48,11 @@ export default function Sidebar({
 
       <div className="sidebar-footer">
         <button type="button" className="sidebar-action refresh-btn" onClick={refreshAll} title="Refresh">
-          <RefreshCw size={16} aria-hidden="true" />
+          <span aria-hidden="true">🔄</span>
           Refresh
         </button>
         <button type="button" className="sidebar-action logout-btn" onClick={logout} title="Logout">
-          <LogOut size={16} aria-hidden="true" />
+          <span aria-hidden="true">🚪</span>
           Logout
         </button>
       </div>

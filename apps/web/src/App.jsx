@@ -555,7 +555,7 @@ function App() {
 
         <footer className="app-footer">
           <span className="app-footer-brand">FileTrack System</span>
-          <span className="app-footer-meta">© {new Date().getFullYear()} FileTrack. All rights reserved.</span>
+          <span className="app-footer-meta">© {new Date().getFullYear()} • Secure workspace documents</span>
         </footer>
 
         <PreviewModal
