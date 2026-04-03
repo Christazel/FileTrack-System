@@ -8,65 +8,73 @@ export default function HomeSection({
   markNotificationRead,
   setActiveSection,
 }) {
+  const summaryCards = [
+    { icon: "📄", label: "Total Dokumen", value: dashboard.totalDocuments, description: "File aktif di sistem" },
+    { icon: "👥", label: "Total Pengguna", value: dashboard.totalUsers, description: "Akun workspace" },
+    { icon: "⏱️", label: "Dokumen Terbaru", value: recentDocuments.length, description: "Prioritas untuk direview" },
+  ];
+
+  const kpis = [
+    { label: "Dokumen", value: dashboard.totalDocuments },
+    { label: "User", value: dashboard.totalUsers },
+    { label: "Unread", value: unreadNotifications },
+    { label: "Status", value: unreadNotifications > 0 ? "Needs action" : "Healthy" },
+  ];
+
   return (
-    <>
-      <section className="workspace-summary panel">
-        <div className="workspace-copy">
-          <p className="eyebrow">Operational Overview</p>
-          <h1>Ruang kerja dokumen yang lebih fokus dan cepat dipindai.</h1>
-          <p className="subtext">Pantau file penting, notifikasi, dan aktivitas tim dari satu tampilan yang lebih tenang.</p>
-        </div>
-        <div className="workspace-pills">
-          <div className="workspace-pill">
-            <small>Dokumen</small>
-            <strong>{dashboard.totalDocuments}</strong>
+    <section className="home-shell home-shell-saas">
+      <section className="panel home-saas-hero">
+        <div className="home-saas-hero-inner">
+          <div className="home-saas-hero-copy">
+            <p className="eyebrow">Dashboard</p>
+            <h1>Ringkasan workspace, rapi dan cepat dipindai.</h1>
+            <p className="subtext">
+              Fokus ke hal yang penting: jumlah dokumen, user aktif, dan notifikasi yang perlu kamu tindak.
+            </p>
+            <div className="home-saas-hero-meta">
+              <span className="chip">Live</span>
+              <span className="chip soft">{dayjs().format("dddd, DD MMM YYYY")}</span>
+            </div>
           </div>
-          <div className="workspace-pill">
-            <small>User</small>
-            <strong>{dashboard.totalUsers}</strong>
-          </div>
-          <div className="workspace-pill">
-            <small>Notif</small>
-            <strong>{unreadNotifications}</strong>
+
+          <div className="home-saas-kpis" aria-label="Key metrics">
+            {kpis.map((item) => (
+              <article key={item.label} className={`home-saas-kpi ${item.label === "Unread" && unreadNotifications > 0 ? "warn" : ""}`}>
+                <small>{item.label}</small>
+                <strong>{item.value}</strong>
+              </article>
+            ))}
           </div>
         </div>
       </section>
 
-      <section className="stats-grid">
-        <article className="modern-card">
-          <div className="card-icon">📄</div>
-          <p className="card-label">Total Dokumen</p>
-          <h3 className="card-value">{dashboard.totalDocuments}</h3>
-          <span className="card-desc">File aktif di sistem</span>
-        </article>
-        <article className="modern-card">
-          <div className="card-icon">👥</div>
-          <p className="card-label">Total Pengguna</p>
-          <h3 className="card-value">{dashboard.totalUsers}</h3>
-          <span className="card-desc">Akun workspace</span>
-        </article>
-        <article className="modern-card">
-          <div className="card-icon">⏱️</div>
-          <p className="card-label">Dokumen Terbaru</p>
-          <h3 className="card-value">{recentDocuments.length}</h3>
-          <span className="card-desc">Prioritas untuk direview</span>
-        </article>
+      <section className="stats-grid home-stats-grid">
+        {summaryCards.map((item) => (
+          <article key={item.label} className="modern-card home-stat-card home-saas-stat">
+            <div className="home-stat-top">
+              <span className="home-stat-icon" aria-hidden="true">{item.icon}</span>
+              <span className="home-stat-kicker">{item.label}</span>
+            </div>
+            <h3 className="home-stat-value">{item.value}</h3>
+            <span className="home-stat-desc">{item.description}</span>
+          </article>
+        ))}
       </section>
 
       <section className="dashboard-grid compact-grid">
         <div className="stack-col">
-          <section className="panel">
+          <section className="panel home-panel home-saas-panel">
             <div className="panel-heading">
               <div>
                 <p className="eyebrow">Recent Activity</p>
                 <h3>Dokumen terbaru</h3>
               </div>
-              <button type="button" className="ghost-btn" onClick={() => setActiveSection("documents")}>Lihat semua</button>
+              <button type="button" className="ghost-btn home-panel-action" onClick={() => setActiveSection("documents")}>Lihat semua</button>
             </div>
-            <div className="doc-list">
+            <div className="doc-list home-doc-list">
               {recentDocuments.length ? (
                 recentDocuments.slice(0, 5).map((doc) => (
-                  <div key={doc.id} className="doc-card">
+                  <div key={doc.id} className="doc-card home-doc-card">
                     <div className="doc-header">
                       <h4>{doc.title}</h4>
                       <span className="chip soft">{doc.category?.name}</span>
@@ -91,15 +99,15 @@ export default function HomeSection({
         </div>
 
         <aside className="stack-col side-col">
-          <section className="panel notifications-panel">
+          <section className="panel notifications-panel home-panel home-saas-panel">
             <div className="panel-heading">
               <div>
                 <p className="eyebrow">Quick Inbox</p>
                 <h3>Notifikasi penting</h3>
               </div>
-              <button type="button" className="ghost-btn" onClick={() => setActiveSection("notifications")}>Lihat semua</button>
+              <button type="button" className="ghost-btn home-panel-action" onClick={() => setActiveSection("notifications")}>Lihat semua</button>
             </div>
-            <div className="notification-list">
+            <div className="notification-list home-notification-list">
               {notifications.slice(0, 5).length ? notifications.slice(0, 5).map((item) => (
                 <button key={item.id} type="button" className={`notification-item ${item.isRead ? "read" : "unread"}`} onClick={() => markNotificationRead(item.id)}>
                   <strong>{item.title}</strong>
@@ -111,6 +119,6 @@ export default function HomeSection({
           </section>
         </aside>
       </section>
-    </>
+    </section>
   );
 }

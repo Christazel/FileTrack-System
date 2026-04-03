@@ -32,9 +32,9 @@ export default function DocumentsSection({
   const [showTips, setShowTips] = useState(true);
 
   return (
-    <section className="dashboard-grid documents-grid">
+    <section className="dashboard-grid documents-grid documents-shell-saas">
       <div className="stack-col">
-        <section className="panel">
+        <section className="panel saas-panel">
           <div className="panel-heading">
             <div>
               <p className="eyebrow">Upload</p>
@@ -54,7 +54,7 @@ export default function DocumentsSection({
         </section>
 
         {isManagerLike ? (
-          <section className="panel">
+          <section className="panel saas-panel">
             <div className="panel-heading">
               <div>
                 <p className="eyebrow">Kategori</p>
@@ -68,7 +68,7 @@ export default function DocumentsSection({
           </section>
         ) : null}
 
-        <section className="panel">
+        <section className="panel saas-panel">
           <div className="panel-heading">
             <div>
               <p className="eyebrow">Search</p>
@@ -93,7 +93,7 @@ export default function DocumentsSection({
           </div>
         </section>
 
-        <section className="panel">
+        <section className="panel saas-panel">
           <div className="panel-heading">
             <div>
               <p className="eyebrow">Dokumen</p>
@@ -104,7 +104,7 @@ export default function DocumentsSection({
           <div className="doc-list">
             {paginatedDocuments.length ? (
               paginatedDocuments.map((doc) => (
-                <div key={doc.id} className="doc-card interactive">
+                <div key={doc.id} className="doc-card interactive saas-card">
                   <div className="doc-header">
                     <h4>{doc.title}</h4>
                     <span className="chip soft">{doc.category?.name}</span>
@@ -145,7 +145,7 @@ export default function DocumentsSection({
 
       <aside className="stack-col side-col documents-side-col">
         {showTips ? (
-          <section className="panel notifications-panel">
+          <section className="panel notifications-panel saas-panel">
             <div className="panel-heading">
               <div>
                 <p className="eyebrow">Tips</p>
@@ -161,7 +161,7 @@ export default function DocumentsSection({
             </div>
           </section>
         ) : (
-          <section className="panel tips-collapsed-panel">
+          <section className="panel tips-collapsed-panel saas-panel">
             <div className="panel-heading">
               <div>
                 <p className="eyebrow">Tips</p>

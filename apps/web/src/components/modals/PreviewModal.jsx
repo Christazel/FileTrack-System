@@ -20,8 +20,8 @@ export default function PreviewModal({
 
   return (
     <div className="modal-backdrop" onClick={closeModal} role="presentation">
-      <section className="modal-card" onClick={(event) => event.stopPropagation()}>
-        <div className="modal-header">
+      <section className="modal-card modal-card-saas" onClick={(event) => event.stopPropagation()}>
+        <div className="modal-header modal-header-saas">
           <div>
             <p className="eyebrow">{previewModal.type === "preview" ? "Preview PDF" : previewModal.type === "versions" ? "Versioning" : "Detail"}</p>
             <h3>{previewModal.document?.title}</h3>
@@ -51,7 +51,7 @@ export default function PreviewModal({
               <div><span>Share</span><strong>{documentShares.length} kali</strong></div>
             </div>
 
-            <section className="subpanel">
+            <section className="subpanel saas-subpanel">
               <h4>Tambah versi baru</h4>
               <div className="form-inline version-form">
                 <input
@@ -67,7 +67,7 @@ export default function PreviewModal({
               </div>
             </section>
 
-            <section className="subpanel">
+            <section className="subpanel saas-subpanel">
               <h4>Share ke user</h4>
               <div className="form-inline share-form">
                 <select
@@ -108,7 +108,7 @@ export default function PreviewModal({
               </div>
             </section>
 
-            <section className="subpanel timeline-box">
+            <section className="subpanel timeline-box saas-subpanel">
               <h4>Riwayat versi</h4>
               <div className="timeline-list">
                 {documentVersions.map((version) => (
@@ -121,7 +121,7 @@ export default function PreviewModal({
               </div>
             </section>
 
-            <section className="subpanel timeline-box">
+            <section className="subpanel timeline-box saas-subpanel">
               <h4>Riwayat share</h4>
               <div className="timeline-list">
                 {documentShares.map((share) => (

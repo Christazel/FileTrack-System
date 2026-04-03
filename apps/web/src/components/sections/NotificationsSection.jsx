@@ -2,9 +2,9 @@ import dayjs from "dayjs";
 
 export default function NotificationsSection({ notifications, markNotificationRead, isManagerLike, logs }) {
   return (
-    <section className="dashboard-grid single-view-grid">
+    <section className="dashboard-grid single-view-grid notifications-shell-saas">
       <div className="stack-col">
-        <section className="panel notifications-panel">
+        <section className="panel notifications-panel saas-panel">
           <div className="panel-heading">
             <div>
               <p className="eyebrow">Notifications</p>
@@ -23,7 +23,7 @@ export default function NotificationsSection({ notifications, markNotificationRe
         </section>
 
         {isManagerLike ? (
-          <section className="panel">
+          <section className="panel saas-panel">
             <div className="panel-heading">
               <div>
                 <p className="eyebrow">Activity</p>
