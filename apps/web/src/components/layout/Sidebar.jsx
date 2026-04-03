@@ -8,9 +8,13 @@ export default function Sidebar({
   logout,
 }) {
   const navItems = [
-    { key: "home", icon: "🏠", label: "Dashboard" },
-    { key: "documents", icon: "📄", label: "Dokumen", badge: documentsCount },
-    { key: "notifications", icon: "🔔", label: "Notifikasi", badge: unreadNotifications > 0 ? unreadNotifications : null },
+    { key: "home", label: "Dashboard" },
+    { key: "documents", label: "Dokumen", badge: documentsCount },
+    {
+      key: "notifications",
+      label: "Notifikasi",
+      badge: unreadNotifications > 0 ? unreadNotifications : null,
+    },
   ];
 
   return (
@@ -37,7 +41,6 @@ export default function Sidebar({
             className={`nav-btn ${activeSection === item.key ? "active" : ""}`}
             onClick={() => setActiveSection(item.key)}
           >
-            <span className="nav-icon" aria-hidden="true">{item.icon}</span>
             <span className="nav-label">{item.label}</span>
             {item.badge !== null && item.badge !== undefined ? (
               <span className={`nav-badge ${item.key === "notifications" ? "unread" : ""}`}>{item.badge}</span>
@@ -48,12 +51,10 @@ export default function Sidebar({
 
       <div className="sidebar-footer">
         <button type="button" className="sidebar-action refresh-btn" onClick={refreshAll} title="Refresh">
-          <span aria-hidden="true">🔄</span>
-          Refresh
+          Muat ulang
         </button>
         <button type="button" className="sidebar-action logout-btn" onClick={logout} title="Logout">
-          <span aria-hidden="true">🚪</span>
-          Logout
+          Keluar
         </button>
       </div>
     </aside>

@@ -13,20 +13,14 @@ export default function Topbar({ activeSection, userName, unreadNotifications, m
     <header className="topbar">
       <div className="topbar-content">
         <div className="topbar-main">
-          <div className="topbar-context">
-            <span className="topbar-context-pill">{sectionTitle}</span>
-            <span className="topbar-context-hint">{sectionHint}</span>
-          </div>
-          <h2 className="topbar-title">Selamat datang kembali, {userName}!</h2>
-          <div className="topbar-meta">
-            <span className="topbar-chip">{dayjs().format("dddd, DD MMMM YYYY")}</span>
-            <span className="topbar-chip subtle">{sectionHint}</span>
-          </div>
+          <p className="topbar-kicker">{dayjs().format("dddd, DD MMMM YYYY")}</p>
+          <h2 className="topbar-title">{sectionTitle}</h2>
+          <p className="topbar-subtitle">{sectionHint}</p>
         </div>
 
         <div className="topbar-actions">
+          <span className="topbar-user">{userName}</span>
           <button className="topbar-alert-btn" type="button" onClick={markAllNotificationsRead}>
-            <span aria-hidden="true">🔔</span>
             Tandai Dibaca
             <span className={`topbar-alert-count ${unreadNotifications > 0 ? "active" : ""}`}>{unreadNotifications}</span>
           </button>
