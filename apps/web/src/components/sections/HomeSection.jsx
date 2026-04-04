@@ -154,260 +154,262 @@ export default function HomeSection({
                 </div>
               </div>
 
-              <section className="subpanel saas-subpanel">
-                <h4>Kelola departemen</h4>
-                <form
-                  className="form-inline compact-form"
-                  onSubmit={async (e) => {
-                    e.preventDefault();
-                    if (!newDepartment.trim()) {
-                      return;
-                    }
-                    await adminCreateDepartment({ name: newDepartment.trim() });
-                    setNewDepartment("");
-                  }}
-                >
-                  <input
-                    placeholder="Nama departemen"
-                    value={newDepartment}
-                    onChange={(e) => setNewDepartment(e.target.value)}
-                  />
-                  <button type="submit">Tambah</button>
-                </form>
+              <div className="stack-col admin-stack">
+                <section className="subpanel saas-subpanel spacious-subpanel">
+                  <h4>Kelola departemen</h4>
+                  <form
+                    className="form-inline compact-form"
+                    onSubmit={async (e) => {
+                      e.preventDefault();
+                      if (!newDepartment.trim()) {
+                        return;
+                      }
+                      await adminCreateDepartment({ name: newDepartment.trim() });
+                      setNewDepartment("");
+                    }}
+                  >
+                    <input
+                      placeholder="Nama departemen"
+                      value={newDepartment}
+                      onChange={(e) => setNewDepartment(e.target.value)}
+                    />
+                    <button type="submit">Tambah</button>
+                  </form>
 
-                <div className="timeline-list" style={{ marginTop: 12 }}>
-                  {orderedDepartments.length ? (
-                    orderedDepartments.map((dept) => {
-                      const draft = departmentDrafts[dept.id] ?? dept.name;
+                  <div className="timeline-list" style={{ marginTop: 12 }}>
+                    {orderedDepartments.length ? (
+                      orderedDepartments.map((dept) => {
+                        const draft = departmentDrafts[dept.id] ?? dept.name;
+                        return (
+                          <div key={dept.id} className="timeline-item">
+                            <strong>{dept.name}</strong>
+                            <div className="form-inline compact-form" style={{ marginTop: 10 }}>
+                              <input
+                                value={draft}
+                                onChange={(e) =>
+                                  setDepartmentDrafts((current) => ({
+                                    ...current,
+                                    [dept.id]: e.target.value,
+                                  }))
+                                }
+                                placeholder="Nama departemen"
+                              />
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  await adminUpdateDepartment(dept.id, { name: String(draft || "").trim() });
+                                  setDepartmentDrafts((current) => {
+                                    const next = { ...current };
+                                    delete next[dept.id];
+                                    return next;
+                                  });
+                                }}
+                                disabled={!String(draft || "").trim()}
+                              >
+                                Simpan
+                              </button>
+                              <button
+                                type="button"
+                                className="ghost-btn"
+                                onClick={() => {
+                                  const ok = window.confirm(`Hapus departemen ${dept.name}?`);
+                                  if (ok) {
+                                    adminDeleteDepartment(dept.id);
+                                  }
+                                }}
+                              >
+                                Hapus
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="timeline-item">
+                        <span>Belum ada departemen</span>
+                      </div>
+                    )}
+                  </div>
+                </section>
+
+                <section className="subpanel saas-subpanel spacious-subpanel">
+                  <h4>Buat user</h4>
+                  <form
+                    className="form-inline upload-form spacious"
+                    onSubmit={async (e) => {
+                      e.preventDefault();
+                      if (!createForm.name.trim() || !createForm.email.trim()) {
+                        return;
+                      }
+
+                      await adminCreateUser({
+                        name: createForm.name.trim(),
+                        email: createForm.email.trim(),
+                        role: createForm.role,
+                        departmentId: createForm.departmentId ? Number(createForm.departmentId) : undefined,
+                        password: createForm.password || undefined,
+                      });
+
+                      setCreateForm({ name: "", email: "", role: "STAFF", departmentId: "", password: "" });
+                    }}
+                  >
+                    <input
+                      placeholder="Nama"
+                      value={createForm.name}
+                      onChange={(e) => setCreateForm((p) => ({ ...p, name: e.target.value }))}
+                      required
+                    />
+                    <input
+                      placeholder="Email"
+                      value={createForm.email}
+                      onChange={(e) => setCreateForm((p) => ({ ...p, email: e.target.value }))}
+                      required
+                    />
+                    <select
+                      value={createForm.role}
+                      onChange={(e) => setCreateForm((p) => ({ ...p, role: e.target.value }))}
+                    >
+                      <option value="ADMIN">ADMIN</option>
+                      <option value="MANAGER">MANAGER</option>
+                      <option value="STAFF">STAFF</option>
+                    </select>
+                    <select
+                      value={createForm.departmentId}
+                      onChange={(e) => setCreateForm((p) => ({ ...p, departmentId: e.target.value }))}
+                    >
+                      <option value="">Tanpa departemen</option>
+                      {orderedDepartments.map((dept) => (
+                        <option key={dept.id} value={dept.id}>
+                          {dept.name}
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      placeholder="Password (opsional)"
+                      value={createForm.password}
+                      onChange={(e) => setCreateForm((p) => ({ ...p, password: e.target.value }))}
+                    />
+                    <button type="submit">Buat</button>
+                  </form>
+                  <p className="subtext">Jika password kosong, default: Password123!</p>
+                </section>
+
+                <section className="subpanel timeline-box saas-subpanel spacious-subpanel">
+                  <h4>Daftar user</h4>
+                  <div className="timeline-list">
+                    {orderedUsers.map((item) => {
+                      const draft = getDraftFor(item);
+                      const isSelf = user?.id === item.id;
+
                       return (
-                        <div key={dept.id} className="timeline-item">
-                          <strong>{dept.name}</strong>
-                          <div className="form-inline compact-form" style={{ marginTop: 10 }}>
+                        <div key={item.id} className="timeline-item">
+                          <strong>{item.name}</strong>
+                          <small>{item.email} • {item.role}</small>
+
+                          <div className="form-inline upload-form spacious" style={{ marginTop: 14 }}>
                             <input
-                              value={draft}
+                              value={draft.name}
                               onChange={(e) =>
-                                setDepartmentDrafts((current) => ({
+                                setEditDrafts((current) => ({
                                   ...current,
-                                  [dept.id]: e.target.value,
+                                  [item.id]: { ...draft, name: e.target.value },
                                 }))
                               }
-                              placeholder="Nama departemen"
+                              placeholder="Nama"
                             />
+                            <input
+                              value={draft.email}
+                              onChange={(e) =>
+                                setEditDrafts((current) => ({
+                                  ...current,
+                                  [item.id]: { ...draft, email: e.target.value },
+                                }))
+                              }
+                              placeholder="Email"
+                            />
+                            <select
+                              value={draft.role}
+                              onChange={(e) =>
+                                setEditDrafts((current) => ({
+                                  ...current,
+                                  [item.id]: { ...draft, role: e.target.value },
+                                }))
+                              }
+                            >
+                              <option value="ADMIN">ADMIN</option>
+                              <option value="MANAGER">MANAGER</option>
+                              <option value="STAFF">STAFF</option>
+                            </select>
+                            <select
+                              value={draft.departmentId === null ? "" : draft.departmentId}
+                              onChange={(e) =>
+                                setEditDrafts((current) => ({
+                                  ...current,
+                                  [item.id]: {
+                                    ...draft,
+                                    departmentId: e.target.value ? Number(e.target.value) : null,
+                                  },
+                                }))
+                              }
+                            >
+                              <option value="">Tanpa departemen</option>
+                              {orderedDepartments.map((dept) => (
+                                <option key={dept.id} value={dept.id}>
+                                  {dept.name}
+                                </option>
+                              ))}
+                            </select>
                             <button
                               type="button"
                               onClick={async () => {
-                                await adminUpdateDepartment(dept.id, { name: String(draft || "").trim() });
-                                setDepartmentDrafts((current) => {
+                                await adminUpdateUser(item.id, {
+                                  name: draft.name,
+                                  email: draft.email,
+                                  role: draft.role,
+                                  departmentId: draft.departmentId === "" ? null : draft.departmentId,
+                                });
+                                setEditDrafts((current) => {
                                   const next = { ...current };
-                                  delete next[dept.id];
+                                  delete next[item.id];
                                   return next;
                                 });
                               }}
-                              disabled={!String(draft || "").trim()}
                             >
                               Simpan
                             </button>
                             <button
                               type="button"
                               className="ghost-btn"
+                              onClick={() => adminResetPassword(item.id)}
+                              disabled={isSelf}
+                              title={isSelf ? "Tidak untuk akun sendiri" : "Reset password"}
+                            >
+                              Reset
+                            </button>
+                            <button
+                              type="button"
+                              className="ghost-btn"
                               onClick={() => {
-                                const ok = window.confirm(`Hapus departemen ${dept.name}?`);
+                                if (isSelf) {
+                                  return;
+                                }
+                                const ok = window.confirm(`Hapus user ${item.email}?`);
                                 if (ok) {
-                                  adminDeleteDepartment(dept.id);
+                                  adminDeleteUser(item.id);
                                 }
                               }}
+                              disabled={isSelf}
+                              title={isSelf ? "Tidak untuk akun sendiri" : "Hapus user"}
                             >
                               Hapus
                             </button>
                           </div>
                         </div>
                       );
-                    })
-                  ) : (
-                    <div className="timeline-item">
-                      <span>Belum ada departemen</span>
-                    </div>
-                  )}
-                </div>
-              </section>
-
-              <section className="subpanel saas-subpanel spacious-subpanel">
-                <h4>Buat user</h4>
-                <form
-                  className="form-inline upload-form spacious"
-                  onSubmit={async (e) => {
-                    e.preventDefault();
-                    if (!createForm.name.trim() || !createForm.email.trim()) {
-                      return;
-                    }
-
-                    await adminCreateUser({
-                      name: createForm.name.trim(),
-                      email: createForm.email.trim(),
-                      role: createForm.role,
-                      departmentId: createForm.departmentId ? Number(createForm.departmentId) : undefined,
-                      password: createForm.password || undefined,
-                    });
-
-                    setCreateForm({ name: "", email: "", role: "STAFF", departmentId: "", password: "" });
-                  }}
-                >
-                  <input
-                    placeholder="Nama"
-                    value={createForm.name}
-                    onChange={(e) => setCreateForm((p) => ({ ...p, name: e.target.value }))}
-                    required
-                  />
-                  <input
-                    placeholder="Email"
-                    value={createForm.email}
-                    onChange={(e) => setCreateForm((p) => ({ ...p, email: e.target.value }))}
-                    required
-                  />
-                  <select
-                    value={createForm.role}
-                    onChange={(e) => setCreateForm((p) => ({ ...p, role: e.target.value }))}
-                  >
-                    <option value="ADMIN">ADMIN</option>
-                    <option value="MANAGER">MANAGER</option>
-                    <option value="STAFF">STAFF</option>
-                  </select>
-                  <select
-                    value={createForm.departmentId}
-                    onChange={(e) => setCreateForm((p) => ({ ...p, departmentId: e.target.value }))}
-                  >
-                    <option value="">Tanpa departemen</option>
-                    {orderedDepartments.map((dept) => (
-                      <option key={dept.id} value={dept.id}>
-                        {dept.name}
-                      </option>
-                    ))}
-                  </select>
-                  <input
-                    placeholder="Password (opsional)"
-                    value={createForm.password}
-                    onChange={(e) => setCreateForm((p) => ({ ...p, password: e.target.value }))}
-                  />
-                  <button type="submit">Buat</button>
-                </form>
-                <p className="subtext">Jika password kosong, default: Password123!</p>
-              </section>
-
-              <section className="subpanel timeline-box saas-subpanel spacious-subpanel">
-                <h4>Daftar user</h4>
-                <div className="timeline-list">
-                  {orderedUsers.map((item) => {
-                    const draft = getDraftFor(item);
-                    const isSelf = user?.id === item.id;
-
-                    return (
-                      <div key={item.id} className="timeline-item">
-                        <strong>{item.name}</strong>
-                        <small>{item.email} • {item.role}</small>
-
-                        <div className="form-inline upload-form spacious" style={{ marginTop: 14 }}>
-                          <input
-                            value={draft.name}
-                            onChange={(e) =>
-                              setEditDrafts((current) => ({
-                                ...current,
-                                [item.id]: { ...draft, name: e.target.value },
-                              }))
-                            }
-                            placeholder="Nama"
-                          />
-                          <input
-                            value={draft.email}
-                            onChange={(e) =>
-                              setEditDrafts((current) => ({
-                                ...current,
-                                [item.id]: { ...draft, email: e.target.value },
-                              }))
-                            }
-                            placeholder="Email"
-                          />
-                          <select
-                            value={draft.role}
-                            onChange={(e) =>
-                              setEditDrafts((current) => ({
-                                ...current,
-                                [item.id]: { ...draft, role: e.target.value },
-                              }))
-                            }
-                          >
-                            <option value="ADMIN">ADMIN</option>
-                            <option value="MANAGER">MANAGER</option>
-                            <option value="STAFF">STAFF</option>
-                          </select>
-                          <select
-                            value={draft.departmentId === null ? "" : draft.departmentId}
-                            onChange={(e) =>
-                              setEditDrafts((current) => ({
-                                ...current,
-                                [item.id]: {
-                                  ...draft,
-                                  departmentId: e.target.value ? Number(e.target.value) : null,
-                                },
-                              }))
-                            }
-                          >
-                            <option value="">Tanpa departemen</option>
-                            {orderedDepartments.map((dept) => (
-                              <option key={dept.id} value={dept.id}>
-                                {dept.name}
-                              </option>
-                            ))}
-                          </select>
-                          <button
-                            type="button"
-                            onClick={async () => {
-                              await adminUpdateUser(item.id, {
-                                name: draft.name,
-                                email: draft.email,
-                                role: draft.role,
-                                departmentId: draft.departmentId === "" ? null : draft.departmentId,
-                              });
-                              setEditDrafts((current) => {
-                                const next = { ...current };
-                                delete next[item.id];
-                                return next;
-                              });
-                            }}
-                          >
-                            Simpan
-                          </button>
-                          <button
-                            type="button"
-                            className="ghost-btn"
-                            onClick={() => adminResetPassword(item.id)}
-                            disabled={isSelf}
-                            title={isSelf ? "Tidak untuk akun sendiri" : "Reset password"}
-                          >
-                            Reset
-                          </button>
-                          <button
-                            type="button"
-                            className="ghost-btn"
-                            onClick={() => {
-                              if (isSelf) {
-                                return;
-                              }
-                              const ok = window.confirm(`Hapus user ${item.email}?`);
-                              if (ok) {
-                                adminDeleteUser(item.id);
-                              }
-                            }}
-                            disabled={isSelf}
-                            title={isSelf ? "Tidak untuk akun sendiri" : "Hapus user"}
-                          >
-                            Hapus
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </section>
+                    })}
+                  </div>
+                </section>
+              </div>
             </section>
           ) : null}
         </div>

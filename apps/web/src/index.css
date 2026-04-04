@@ -1646,6 +1646,10 @@ tbody tr:hover td { color: var(--ink); }
   gap: 18px;
 }
 
+.admin-stack {
+  gap: 22px;
+}
+
 .search-box {
   display: flex;
   align-items: center;
