@@ -18,20 +18,46 @@ enum Role {
   MANAGER
 }
 
+enum WorkflowStatus {
+  CREATED
+  ASSIGNED
+  IN_PROGRESS
+  DONE
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Department {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  users     User[]
+  documents Document[]
+}
+
 model User {
   id          Int        @id @default(autoincrement())
   name        String
   email       String     @unique
   password    String
   role        Role       @default(STAFF)
+  departmentId Int?
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
+  department  Department? @relation(fields: [departmentId], references: [id])
   documents   Document[]
   logs        Log[]
   notifications Notification[]
   sentShares  DocumentShare[] @relation("DocumentSharedBy")
   receivedShares DocumentShare[] @relation("DocumentSharedTo")
   versionUploads DocumentVersion[]
+
+  assignedDocuments Document[] @relation("DocumentAssignedTo")
+  comments DocumentComment[]
 }
 
 model Category {
@@ -51,15 +77,35 @@ model Document {
   currentVersion Int         @default(1)
   uploadedById Int
   categoryId   Int
+  departmentId Int?
+  assignedToId Int?
+  workflowStatus WorkflowStatus @default(CREATED)
+  approvalStatus ApprovalStatus @default(PENDING)
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   uploadedBy   User          @relation(fields: [uploadedById], references: [id])
   category     Category      @relation(fields: [categoryId], references: [id])
+  department   Department?   @relation(fields: [departmentId], references: [id])
+  assignedTo   User?         @relation("DocumentAssignedTo", fields: [assignedToId], references: [id])
   tags         DocumentTag[]
   logs         Log[]
   versions     DocumentVersion[]
   shares       DocumentShare[]
   notifications Notification[]
+  comments     DocumentComment[]
+}
+
+model DocumentComment {
+  id         Int      @id @default(autoincrement())
+  documentId Int
+  authorId   Int
+  message    String
+  createdAt  DateTime @default(now())
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  author   User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([documentId, createdAt])
 }
 
 model DocumentVersion {

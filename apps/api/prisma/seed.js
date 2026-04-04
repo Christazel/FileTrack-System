@@ -13,19 +13,37 @@ async function main() {
   await prisma.documentTag.deleteMany();
   await prisma.document.deleteMany();
 
+  const departments = ["Operasional", "Legal", "Finance"];
+  const createdDepartments = [];
+  for (const name of departments) {
+    const department = await prisma.department.upsert({
+      where: { name },
+      update: {},
+      create: { name },
+    });
+    createdDepartments.push(department);
+  }
+
+  const [opsDepartment, legalDepartment, financeDepartment] = createdDepartments;
+
   const users = [
-    { name: "Admin Utama", email: "admin@filetrack.local", role: "ADMIN" },
-    { name: "Maya Suryani", email: "manager@filetrack.local", role: "MANAGER" },
-    { name: "Raka Pratama", email: "staff@filetrack.local", role: "STAFF" },
-    { name: "Nadia Putri", email: "legal@filetrack.local", role: "STAFF" },
-    { name: "Bima Kurnia", email: "finance@filetrack.local", role: "STAFF" },
+    { name: "Admin Utama", email: "admin@filetrack.local", role: "ADMIN", departmentId: null },
+    { name: "Maya Suryani", email: "manager@filetrack.local", role: "MANAGER", departmentId: opsDepartment.id },
+    { name: "Raka Pratama", email: "staff@filetrack.local", role: "STAFF", departmentId: opsDepartment.id },
+    { name: "Nadia Putri", email: "legal@filetrack.local", role: "STAFF", departmentId: legalDepartment.id },
+    { name: "Bima Kurnia", email: "finance@filetrack.local", role: "STAFF", departmentId: financeDepartment.id },
   ];
 
   const createdUsers = [];
   for (const user of users) {
     const savedUser = await prisma.user.upsert({
       where: { email: user.email },
-      update: { name: user.name, role: user.role, password: passwordHash },
+      update: {
+        name: user.name,
+        role: user.role,
+        departmentId: user.departmentId,
+        password: passwordHash,
+      },
       create: { ...user, password: passwordHash },
     });
     createdUsers.push(savedUser);
@@ -56,6 +74,7 @@ async function main() {
       currentVersion: 2,
       categoryId: contractCategory.id,
       uploadedById: manager.id,
+      departmentId: manager.departmentId,
       tags: ["vendor", "kontrak", "2026"],
     },
     {
@@ -67,6 +86,7 @@ async function main() {
       currentVersion: 1,
       categoryId: financeCategory.id,
       uploadedById: finance.id,
+      departmentId: finance.departmentId,
       tags: ["finance", "q1", "audit"],
     },
     {
@@ -78,6 +98,7 @@ async function main() {
       currentVersion: 3,
       categoryId: hrCategory.id,
       uploadedById: staff.id,
+      departmentId: staff.departmentId,
       tags: ["hr", "sop", "onboarding"],
     },
     {
@@ -89,6 +110,7 @@ async function main() {
       currentVersion: 1,
       categoryId: complianceCategory.id,
       uploadedById: legal.id,
+      departmentId: legal.departmentId,
       tags: ["compliance", "audit", "internal"],
     },
     {
@@ -100,6 +122,7 @@ async function main() {
       currentVersion: 1,
       categoryId: operationsCategory.id,
       uploadedById: manager.id,
+      departmentId: manager.departmentId,
       tags: ["operasional", "planning"],
     },
   ];
@@ -116,6 +139,7 @@ async function main() {
         currentVersion: doc.currentVersion,
         uploadedById: doc.uploadedById,
         categoryId: doc.categoryId,
+        departmentId: doc.departmentId,
         tags: {
           create: doc.tags.map((name) => ({ name })),
         },
@@ -257,6 +281,15 @@ async function main() {
         detail: "Admin login ke sistem demo",
       },
     ],
+  });
+
+  await prisma.document.update({
+    where: { id: createdDocuments[0].id },
+    data: {
+      assignedToId: staff.id,
+      workflowStatus: "ASSIGNED",
+      approvalStatus: "PENDING",
+    },
   });
 
   console.log("Seed selesai. Gunakan password: Password123!");

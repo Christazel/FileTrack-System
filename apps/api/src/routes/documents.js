@@ -7,6 +7,7 @@ const upload = require("../middleware/upload");
 const { authRequired, requireRoles } = require("../middleware/auth");
 const { writeLog } = require("../utils/log");
 const { notifyRoles, createNotification } = require("../utils/notify");
+const { getUserScope, buildDocumentAccessWhere, findDocumentWithAccess, isAdmin, isManager, isStaff } = require("../utils/access");
 
 const router = express.Router();
 
@@ -14,6 +15,7 @@ const metadataSchema = z.object({
   title: z.string().min(2).max(150),
   categoryId: z.coerce.number().int().positive(),
   tags: z.string().optional(),
+  departmentId: z.coerce.number().int().positive().optional(),
 });
 
 router.get("/", authRequired, async (req, res) => {
@@ -22,7 +24,11 @@ router.get("/", authRequired, async (req, res) => {
   const dateFrom = req.query.dateFrom ? new Date(req.query.dateFrom) : undefined;
   const dateTo = req.query.dateTo ? new Date(req.query.dateTo) : undefined;
 
+  const userScope = await getUserScope(req.user.id);
+  const accessWhere = buildDocumentAccessWhere({ user: req.user, userScope });
+
   const where = {
+    ...accessWhere,
     ...(categoryId ? { categoryId } : {}),
     ...(dateFrom || dateTo
       ? {
@@ -54,6 +60,8 @@ router.get("/", authRequired, async (req, res) => {
     orderBy: { createdAt: "desc" },
     include: {
       category: true,
+      department: true,
+      assignedTo: { select: { id: true, name: true, role: true } },
       uploadedBy: { select: { id: true, name: true, role: true } },
       tags: true,
       versions: {
@@ -73,7 +81,7 @@ router.get("/", authRequired, async (req, res) => {
 router.post(
   "/",
   authRequired,
-  requireRoles("ADMIN", "STAFF", "MANAGER"),
+  requireRoles("ADMIN", "MANAGER"),
   upload.single("file"),
   async (req, res) => {
     try {
@@ -81,17 +89,31 @@ router.post(
         return res.status(400).json({ message: "File wajib diunggah." });
       }
 
-      const { title, categoryId, tags } = metadataSchema.parse(req.body);
+      const userScope = await getUserScope(req.user.id);
+      if (!userScope || (!isAdmin(userScope) && !isManager(userScope))) {
+        return res.status(403).json({ message: "Akses ditolak." });
+      }
+
+      const { title, categoryId, tags, departmentId } = metadataSchema.parse(req.body);
       const tagList = (tags || "")
         .split(",")
         .map((t) => t.trim())
         .filter(Boolean)
         .slice(0, 10);
 
+      const resolvedDepartmentId = isManager(userScope)
+        ? userScope.departmentId
+        : departmentId || userScope.departmentId || null;
+
+      if (isManager(userScope) && !resolvedDepartmentId) {
+        return res.status(400).json({ message: "Manager wajib memiliki departemen." });
+      }
+
       const document = await prisma.document.create({
         data: {
           title,
           categoryId,
+          departmentId: resolvedDepartmentId,
           originalName: req.file.originalname,
           filePath: req.file.filename,
           mimeType: req.file.mimetype,
@@ -114,6 +136,8 @@ router.post(
         },
         include: {
           category: true,
+          department: true,
+          assignedTo: { select: { id: true, name: true, role: true } },
           uploadedBy: { select: { id: true, name: true, role: true } },
           tags: true,
           versions: true,
@@ -148,7 +172,8 @@ router.post(
 
 router.get("/:id/download", authRequired, async (req, res) => {
   const id = Number(req.params.id);
-  const document = await prisma.document.findUnique({ where: { id } });
+  const userScope = await getUserScope(req.user.id);
+  const document = await findDocumentWithAccess({ documentId: id, user: req.user, userScope });
 
   if (!document) {
     return res.status(404).json({ message: "Dokumen tidak ditemukan." });
@@ -167,7 +192,8 @@ router.get("/:id/download", authRequired, async (req, res) => {
 
 router.get("/:id/preview", authRequired, async (req, res) => {
   const id = Number(req.params.id);
-  const document = await prisma.document.findUnique({ where: { id } });
+  const userScope = await getUserScope(req.user.id);
+  const document = await findDocumentWithAccess({ documentId: id, user: req.user, userScope });
 
   if (!document) {
     return res.status(404).json({ message: "Dokumen tidak ditemukan." });
@@ -181,6 +207,13 @@ router.get("/:id/preview", authRequired, async (req, res) => {
 
 router.get("/:id/versions", authRequired, async (req, res) => {
   const id = Number(req.params.id);
+
+  const userScope = await getUserScope(req.user.id);
+  const document = await findDocumentWithAccess({ documentId: id, user: req.user, userScope });
+  if (!document) {
+    return res.status(404).json({ message: "Dokumen tidak ditemukan." });
+  }
+
   const versions = await prisma.documentVersion.findMany({
     where: { documentId: id },
     orderBy: { versionNumber: "desc" },
@@ -201,9 +234,20 @@ router.post(
     const id = Number(req.params.id);
 
     try {
-      const existing = await prisma.document.findUnique({ where: { id } });
+      const userScope = await getUserScope(req.user.id);
+      const existing = await findDocumentWithAccess({ documentId: id, user: req.user, userScope });
       if (!existing) {
         return res.status(404).json({ message: "Dokumen tidak ditemukan." });
+      }
+
+      if (isStaff(userScope) && existing.assignedToId !== req.user.id) {
+        const shared = await prisma.documentShare.findFirst({
+          where: { documentId: id, sharedToId: req.user.id },
+          select: { id: true },
+        });
+        if (!shared && existing.uploadedById !== req.user.id) {
+          return res.status(403).json({ message: "Anda tidak memiliki akses untuk mengubah dokumen ini." });
+        }
       }
 
       if (!req.file) {
@@ -220,6 +264,7 @@ router.post(
           mimeType: req.file.mimetype,
           fileSize: req.file.size,
           currentVersion: nextVersion,
+          workflowStatus: "IN_PROGRESS",
           versions: {
             create: {
               versionNumber: nextVersion,
@@ -233,6 +278,8 @@ router.post(
         },
         include: {
           category: true,
+          department: true,
+          assignedTo: { select: { id: true, name: true, role: true } },
           uploadedBy: { select: { id: true, name: true, role: true } },
           tags: true,
           versions: true,
@@ -271,12 +318,13 @@ router.post("/:id/share", authRequired, async (req, res) => {
 
   try {
     const data = schema.parse(req.body);
-    const document = await prisma.document.findUnique({ where: { id } });
+    const userScope = await getUserScope(req.user.id);
+    const document = await findDocumentWithAccess({ documentId: id, user: req.user, userScope });
     if (!document) {
       return res.status(404).json({ message: "Dokumen tidak ditemukan." });
     }
 
-    const canShare = req.user.role === "ADMIN" || req.user.role === "MANAGER" || document.uploadedById === req.user.id;
+    const canShare = isAdmin(userScope) || isManager(userScope) || document.uploadedById === req.user.id;
     if (!canShare) {
       return res.status(403).json({ message: "Anda tidak memiliki akses untuk membagikan dokumen ini." });
     }
@@ -328,6 +376,346 @@ router.post("/:id/share", authRequired, async (req, res) => {
   }
 });
 
+router.patch("/:id/assign", authRequired, requireRoles("ADMIN", "MANAGER"), async (req, res) => {
+  const id = Number(req.params.id);
+  const schema = z.object({
+    assignedToId: z.coerce.number().int().positive(),
+  });
+
+  try {
+    const data = schema.parse(req.body);
+
+    const userScope = await getUserScope(req.user.id);
+    if (!userScope || (!isAdmin(userScope) && !isManager(userScope))) {
+      return res.status(403).json({ message: "Akses ditolak." });
+    }
+
+    const document = await findDocumentWithAccess({
+      documentId: id,
+      user: req.user,
+      userScope,
+    });
+
+    if (!document) {
+      return res.status(404).json({ message: "Dokumen tidak ditemukan." });
+    }
+
+    const assignee = await prisma.user.findUnique({
+      where: { id: data.assignedToId },
+      select: { id: true, name: true, role: true, departmentId: true },
+    });
+
+    if (!assignee) {
+      return res.status(404).json({ message: "User tujuan tidak ditemukan." });
+    }
+
+    if (assignee.role !== "STAFF") {
+      return res.status(400).json({ message: "Dokumen hanya dapat di-assign ke staff." });
+    }
+
+    if (isManager(userScope)) {
+      if (!userScope.departmentId) {
+        return res.status(400).json({ message: "Manager wajib memiliki departemen." });
+      }
+      if (assignee.departmentId !== userScope.departmentId) {
+        return res.status(403).json({ message: "Staff harus berada di departemen yang sama." });
+      }
+      if (document.departmentId !== userScope.departmentId) {
+        return res.status(403).json({ message: "Akses ditolak." });
+      }
+    }
+
+    const updated = await prisma.document.update({
+      where: { id: document.id },
+      data: {
+        assignedToId: assignee.id,
+        workflowStatus: "ASSIGNED",
+        approvalStatus: "PENDING",
+      },
+      include: {
+        category: true,
+        department: true,
+        assignedTo: { select: { id: true, name: true, role: true } },
+        uploadedBy: { select: { id: true, name: true, role: true } },
+        tags: true,
+      },
+    });
+
+    await writeLog({
+      userId: req.user.id,
+      action: "ASSIGN_DOCUMENT",
+      detail: `Assign dokumen ke ${assignee.name}`,
+      documentId: updated.id,
+    });
+
+    await createNotification({
+      userId: assignee.id,
+      documentId: updated.id,
+      action: "ASSIGN_DOCUMENT",
+      title: `Dokumen ditugaskan: ${updated.title}`,
+      detail: `${req.user.name} menugaskan dokumen untuk diproses.`,
+    });
+
+    return res.json(updated);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ message: "Input assign tidak valid.", errors: error.issues });
+    }
+    return res.status(500).json({ message: "Gagal assign dokumen.", error: error.message });
+  }
+});
+
+router.patch("/:id/status", authRequired, async (req, res) => {
+  const id = Number(req.params.id);
+  const schema = z.object({
+    workflowStatus: z.enum(["CREATED", "ASSIGNED", "IN_PROGRESS", "DONE"]),
+  });
+
+  try {
+    const data = schema.parse(req.body);
+
+    const userScope = await getUserScope(req.user.id);
+    const document = await findDocumentWithAccess({
+      documentId: id,
+      user: req.user,
+      userScope,
+    });
+
+    if (!document) {
+      return res.status(404).json({ message: "Dokumen tidak ditemukan." });
+    }
+
+    if (isStaff(userScope)) {
+      if (document.assignedToId !== req.user.id) {
+        return res.status(403).json({ message: "Dokumen ini tidak ditugaskan ke Anda." });
+      }
+      if (!["IN_PROGRESS", "DONE"].includes(data.workflowStatus)) {
+        return res.status(403).json({ message: "Staff hanya dapat mengubah status ke IN_PROGRESS atau DONE." });
+      }
+    }
+
+    const updated = await prisma.document.update({
+      where: { id: document.id },
+      data: { workflowStatus: data.workflowStatus },
+      include: {
+        category: true,
+        department: true,
+        assignedTo: { select: { id: true, name: true, role: true } },
+        uploadedBy: { select: { id: true, name: true, role: true } },
+        tags: true,
+      },
+    });
+
+    await writeLog({
+      userId: req.user.id,
+      action: "UPDATE_WORKFLOW_STATUS",
+      detail: `Ubah status ke ${data.workflowStatus}`,
+      documentId: updated.id,
+    });
+
+    if (updated.uploadedById && updated.uploadedById !== req.user.id) {
+      await createNotification({
+        userId: updated.uploadedById,
+        documentId: updated.id,
+        action: "UPDATE_WORKFLOW_STATUS",
+        title: `Status diperbarui: ${updated.title}`,
+        detail: `${req.user.name} mengubah status ke ${data.workflowStatus}.`,
+      });
+    }
+
+    return res.json(updated);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ message: "Input status tidak valid.", errors: error.issues });
+    }
+    return res.status(500).json({ message: "Gagal update status.", error: error.message });
+  }
+});
+
+router.post("/:id/decision", authRequired, requireRoles("ADMIN", "MANAGER"), async (req, res) => {
+  const id = Number(req.params.id);
+  const schema = z.object({
+    approvalStatus: z.enum(["APPROVED", "REJECTED"]),
+    note: z.string().max(250).optional(),
+  });
+
+  try {
+    const data = schema.parse(req.body);
+
+    const userScope = await getUserScope(req.user.id);
+    if (!userScope || (!isAdmin(userScope) && !isManager(userScope))) {
+      return res.status(403).json({ message: "Akses ditolak." });
+    }
+
+    const document = await findDocumentWithAccess({
+      documentId: id,
+      user: req.user,
+      userScope,
+      include: { assignedTo: { select: { id: true, name: true, role: true } } },
+    });
+
+    if (!document) {
+      return res.status(404).json({ message: "Dokumen tidak ditemukan." });
+    }
+
+    const updated = await prisma.document.update({
+      where: { id: document.id },
+      data: { approvalStatus: data.approvalStatus },
+      include: {
+        category: true,
+        department: true,
+        assignedTo: { select: { id: true, name: true, role: true } },
+        uploadedBy: { select: { id: true, name: true, role: true } },
+        tags: true,
+      },
+    });
+
+    const action = data.approvalStatus === "APPROVED" ? "APPROVE_DOCUMENT" : "REJECT_DOCUMENT";
+    await writeLog({
+      userId: req.user.id,
+      action,
+      detail: data.note ? `Keputusan: ${data.approvalStatus} • ${data.note}` : `Keputusan: ${data.approvalStatus}`,
+      documentId: updated.id,
+    });
+
+    if (updated.assignedToId) {
+      await createNotification({
+        userId: updated.assignedToId,
+        documentId: updated.id,
+        action,
+        title: `Keputusan dokumen: ${updated.title}`,
+        detail: data.note || `${req.user.name} menetapkan ${data.approvalStatus}.`,
+      });
+    }
+
+    if (updated.uploadedById && updated.uploadedById !== req.user.id) {
+      await createNotification({
+        userId: updated.uploadedById,
+        documentId: updated.id,
+        action,
+        title: `Keputusan dokumen: ${updated.title}`,
+        detail: data.note || `${req.user.name} menetapkan ${data.approvalStatus}.`,
+      });
+    }
+
+    return res.json(updated);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ message: "Input keputusan tidak valid.", errors: error.issues });
+    }
+    return res.status(500).json({ message: "Gagal menyimpan keputusan.", error: error.message });
+  }
+});
+
+router.get("/:id/tracking", authRequired, async (req, res) => {
+  const id = Number(req.params.id);
+
+  const userScope = await getUserScope(req.user.id);
+  const document = await findDocumentWithAccess({
+    documentId: id,
+    user: req.user,
+    userScope,
+    include: {
+      category: true,
+      department: true,
+      assignedTo: { select: { id: true, name: true, role: true } },
+      uploadedBy: { select: { id: true, name: true, role: true } },
+      tags: true,
+      versions: {
+        orderBy: { versionNumber: "desc" },
+      },
+      shares: {
+        orderBy: { createdAt: "desc" },
+        include: {
+          sharedBy: { select: { id: true, name: true, role: true } },
+          sharedTo: { select: { id: true, name: true, role: true } },
+        },
+      },
+      comments: {
+        orderBy: { createdAt: "desc" },
+        include: {
+          author: { select: { id: true, name: true, role: true } },
+        },
+      },
+      logs: {
+        orderBy: { timestamp: "desc" },
+        take: 50,
+        include: {
+          user: { select: { id: true, name: true, role: true } },
+        },
+      },
+    },
+  });
+
+  if (!document) {
+    return res.status(404).json({ message: "Dokumen tidak ditemukan." });
+  }
+
+  return res.json(document);
+});
+
+router.get("/:id/comments", authRequired, async (req, res) => {
+  const id = Number(req.params.id);
+
+  const userScope = await getUserScope(req.user.id);
+  const document = await findDocumentWithAccess({ documentId: id, user: req.user, userScope });
+  if (!document) {
+    return res.status(404).json({ message: "Dokumen tidak ditemukan." });
+  }
+
+  const comments = await prisma.documentComment.findMany({
+    where: { documentId: id },
+    orderBy: { createdAt: "desc" },
+    include: {
+      author: { select: { id: true, name: true, role: true } },
+    },
+  });
+
+  return res.json(comments);
+});
+
+router.post("/:id/comments", authRequired, async (req, res) => {
+  const id = Number(req.params.id);
+  const schema = z.object({
+    message: z.string().min(1).max(1000),
+  });
+
+  try {
+    const data = schema.parse(req.body);
+
+    const userScope = await getUserScope(req.user.id);
+    const document = await findDocumentWithAccess({ documentId: id, user: req.user, userScope });
+    if (!document) {
+      return res.status(404).json({ message: "Dokumen tidak ditemukan." });
+    }
+
+    const comment = await prisma.documentComment.create({
+      data: {
+        documentId: id,
+        authorId: req.user.id,
+        message: data.message,
+      },
+      include: {
+        author: { select: { id: true, name: true, role: true } },
+      },
+    });
+
+    await writeLog({
+      userId: req.user.id,
+      action: "ADD_COMMENT",
+      detail: "Tambah komentar",
+      documentId: id,
+    });
+
+    return res.status(201).json(comment);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ message: "Input komentar tidak valid.", errors: error.issues });
+    }
+    return res.status(500).json({ message: "Gagal menambah komentar.", error: error.message });
+  }
+});
+
 router.put("/:id", authRequired, requireRoles("ADMIN", "MANAGER"), async (req, res) => {
   const id = Number(req.params.id);
   const schema = z.object({
@@ -338,6 +726,12 @@ router.put("/:id", authRequired, requireRoles("ADMIN", "MANAGER"), async (req, r
 
   try {
     const data = schema.parse(req.body);
+
+    const userScope = await getUserScope(req.user.id);
+    const existing = await findDocumentWithAccess({ documentId: id, user: req.user, userScope });
+    if (!existing) {
+      return res.status(404).json({ message: "Dokumen tidak ditemukan." });
+    }
 
     const updated = await prisma.document.update({
       where: { id },
@@ -378,6 +772,12 @@ router.put("/:id", authRequired, requireRoles("ADMIN", "MANAGER"), async (req, r
 
 router.get("/:id/shares", authRequired, async (req, res) => {
   const id = Number(req.params.id);
+
+  const userScope = await getUserScope(req.user.id);
+  const document = await findDocumentWithAccess({ documentId: id, user: req.user, userScope });
+  if (!document) {
+    return res.status(404).json({ message: "Dokumen tidak ditemukan." });
+  }
 
   const shares = await prisma.documentShare.findMany({
     where: { documentId: id },
