@@ -18,7 +18,10 @@ router.post("/login", async (req, res) => {
   try {
     const { email, password } = loginSchema.parse(req.body);
 
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await prisma.user.findUnique({
+      where: { email },
+      include: { department: { select: { id: true, name: true } } },
+    });
     if (!user) {
       return res.status(401).json({ message: "Email atau password salah." });
     }
@@ -47,6 +50,8 @@ router.post("/login", async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        departmentId: user.departmentId,
+        department: user.department,
       },
     });
   } catch (error) {
@@ -60,7 +65,15 @@ router.post("/login", async (req, res) => {
 router.get("/me", authRequired, async (req, res) => {
   const user = await prisma.user.findUnique({
     where: { id: req.user.id },
-    select: { id: true, name: true, email: true, role: true, createdAt: true },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      departmentId: true,
+      department: { select: { id: true, name: true } },
+      createdAt: true,
+    },
   });
 
   return res.json(user);

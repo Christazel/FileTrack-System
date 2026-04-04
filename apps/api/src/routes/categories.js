@@ -17,7 +17,7 @@ router.get("/", authRequired, async (_req, res) => {
   return res.json(categories);
 });
 
-router.post("/", authRequired, requireRoles("ADMIN", "MANAGER"), async (req, res) => {
+router.post("/", authRequired, requireRoles("ADMIN"), async (req, res) => {
   try {
     const data = categorySchema.parse(req.body);
     const category = await prisma.category.create({ data });
