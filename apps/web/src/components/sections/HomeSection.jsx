@@ -231,7 +231,7 @@ export default function HomeSection({
                 </div>
               </section>
 
-              <section className="subpanel saas-subpanel">
+              <section className="subpanel saas-subpanel spacious-subpanel">
                 <h4>Buat user</h4>
                 <form
                   className="form-inline upload-form spacious"
@@ -293,7 +293,7 @@ export default function HomeSection({
                 <p className="subtext">Jika password kosong, default: Password123!</p>
               </section>
 
-              <section className="subpanel timeline-box saas-subpanel">
+              <section className="subpanel timeline-box saas-subpanel spacious-subpanel">
                 <h4>Daftar user</h4>
                 <div className="timeline-list">
                   {orderedUsers.map((item) => {
@@ -305,7 +305,7 @@ export default function HomeSection({
                         <strong>{item.name}</strong>
                         <small>{item.email} • {item.role}</small>
 
-                        <div className="form-inline upload-form spacious" style={{ marginTop: 10 }}>
+                        <div className="form-inline upload-form spacious" style={{ marginTop: 14 }}>
                           <input
                             value={draft.name}
                             onChange={(e) =>
