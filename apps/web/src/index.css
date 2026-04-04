@@ -789,7 +789,8 @@ tbody tr:hover td { color: var(--ink); }
 }
 
 .form-inline.spacious {
-  gap: 18px;
+  row-gap: 20px;
+  column-gap: 22px;
 }
 
 .form-inline input,
