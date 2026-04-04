@@ -247,7 +247,7 @@ export default function PreviewModal({
               </div>
             </section>
 
-            {shareCandidates.length ? (
+            {isManagerLike && shareCandidates.length ? (
               <section className="subpanel saas-subpanel">
                 <h4>Share ke user</h4>
                 <div className="form-inline share-form">

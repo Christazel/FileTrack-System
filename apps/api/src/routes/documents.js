@@ -309,7 +309,7 @@ router.post(
   },
 );
 
-router.post("/:id/share", authRequired, async (req, res) => {
+router.post("/:id/share", authRequired, requireRoles("ADMIN", "MANAGER"), async (req, res) => {
   const id = Number(req.params.id);
   const schema = z.object({
     sharedToId: z.coerce.number().int().positive(),
@@ -324,18 +324,31 @@ router.post("/:id/share", authRequired, async (req, res) => {
       return res.status(404).json({ message: "Dokumen tidak ditemukan." });
     }
 
-    const canShare = isAdmin(userScope) || isManager(userScope) || document.uploadedById === req.user.id;
-    if (!canShare) {
-      return res.status(403).json({ message: "Anda tidak memiliki akses untuk membagikan dokumen ini." });
-    }
-
     const targetUser = await prisma.user.findUnique({
       where: { id: data.sharedToId },
-      select: { id: true, name: true, email: true, role: true },
+      select: { id: true, name: true, email: true, role: true, departmentId: true },
     });
 
     if (!targetUser) {
       return res.status(404).json({ message: "User tujuan tidak ditemukan." });
+    }
+
+    if (isManager(userScope)) {
+      if (!userScope.departmentId) {
+        return res.status(400).json({ message: "Manager wajib memiliki departemen." });
+      }
+
+      if (document.departmentId !== userScope.departmentId) {
+        return res.status(403).json({ message: "Anda hanya bisa share dokumen departemen Anda." });
+      }
+
+      const isTargetAllowed =
+        targetUser.role === "ADMIN" ||
+        (targetUser.departmentId && targetUser.departmentId === userScope.departmentId);
+
+      if (!isTargetAllowed) {
+        return res.status(403).json({ message: "User tujuan harus berada di departemen yang sama (atau admin)." });
+      }
     }
 
     const shared = await prisma.documentShare.create({
