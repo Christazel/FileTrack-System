@@ -1,17 +1,26 @@
+import { useMemo, useState } from "react";
 import dayjs from "dayjs";
 
 export default function HomeSection({
+  user,
   dashboard,
   unreadNotifications,
   recentDocuments,
   notifications,
   markNotificationRead,
   setActiveSection,
+  users,
+  departments,
+  isAdmin,
+  adminCreateUser,
+  adminUpdateUser,
+  adminResetPassword,
+  adminDeleteUser,
 }) {
   const summaryCards = [
-    { icon: "📄", label: "Total Dokumen", value: dashboard.totalDocuments, description: "File aktif di sistem" },
-    { icon: "👥", label: "Total Pengguna", value: dashboard.totalUsers, description: "Akun workspace" },
-    { icon: "⏱️", label: "Dokumen Terbaru", value: recentDocuments.length, description: "Prioritas untuk direview" },
+    { icon: "DOC", label: "Total Dokumen", value: dashboard.totalDocuments, description: "File aktif di sistem" },
+    { icon: "USR", label: "Total Pengguna", value: dashboard.totalUsers, description: "Akun workspace" },
+    { icon: "NEW", label: "Dokumen Terbaru", value: recentDocuments.length, description: "Prioritas untuk direview" },
   ];
 
   const kpis = [
@@ -20,6 +29,37 @@ export default function HomeSection({
     { label: "Unread", value: unreadNotifications },
     { label: "Status", value: unreadNotifications > 0 ? "Needs action" : "Healthy" },
   ];
+
+  const departmentOptions = Array.isArray(departments) ? departments : [];
+  const userList = Array.isArray(users) ? users : [];
+
+  const [createForm, setCreateForm] = useState({
+    name: "",
+    email: "",
+    role: "STAFF",
+    departmentId: "",
+    password: "",
+  });
+
+  const [editDrafts, setEditDrafts] = useState({});
+
+  const orderedUsers = useMemo(() => {
+    return [...userList].sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+  }, [userList]);
+
+  function getDraftFor(target) {
+    const existing = editDrafts[target.id];
+    if (existing) {
+      return existing;
+    }
+
+    return {
+      name: target.name || "",
+      email: target.email || "",
+      role: target.role || "STAFF",
+      departmentId: target.departmentId ?? "",
+    };
+  }
 
   return (
     <section className="home-shell home-shell-saas">
@@ -80,7 +120,7 @@ export default function HomeSection({
                       <span className="chip soft">{doc.category?.name}</span>
                     </div>
                     <div className="doc-meta">
-                      <span>📄 {doc.originalName}</span>
+                      <span>{doc.originalName}</span>
                       <span>v{doc.currentVersion || 1}</span>
                     </div>
                     <div className="doc-footer">
@@ -90,12 +130,201 @@ export default function HomeSection({
                 ))
               ) : (
                 <div className="empty-state">
-                  <p>📂 Belum ada dokumen</p>
+                  <p>Belum ada dokumen</p>
                   <span>Mulai upload dokumen pertama Anda</span>
                 </div>
               )}
             </div>
           </section>
+
+          {isAdmin ? (
+            <section className="panel home-panel home-saas-panel">
+              <div className="panel-heading">
+                <div>
+                  <p className="eyebrow">Admin</p>
+                  <h3>Kelola user</h3>
+                </div>
+              </div>
+
+              <section className="subpanel saas-subpanel">
+                <h4>Buat user</h4>
+                <form
+                  className="form-inline compact-form"
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    if (!createForm.name.trim() || !createForm.email.trim()) {
+                      return;
+                    }
+
+                    await adminCreateUser({
+                      name: createForm.name.trim(),
+                      email: createForm.email.trim(),
+                      role: createForm.role,
+                      departmentId: createForm.departmentId ? Number(createForm.departmentId) : undefined,
+                      password: createForm.password || undefined,
+                    });
+
+                    setCreateForm({ name: "", email: "", role: "STAFF", departmentId: "", password: "" });
+                  }}
+                >
+                  <input
+                    placeholder="Nama"
+                    value={createForm.name}
+                    onChange={(e) => setCreateForm((p) => ({ ...p, name: e.target.value }))}
+                    required
+                  />
+                  <input
+                    placeholder="Email"
+                    value={createForm.email}
+                    onChange={(e) => setCreateForm((p) => ({ ...p, email: e.target.value }))}
+                    required
+                  />
+                  <select
+                    value={createForm.role}
+                    onChange={(e) => setCreateForm((p) => ({ ...p, role: e.target.value }))}
+                  >
+                    <option value="ADMIN">ADMIN</option>
+                    <option value="MANAGER">MANAGER</option>
+                    <option value="STAFF">STAFF</option>
+                  </select>
+                  <select
+                    value={createForm.departmentId}
+                    onChange={(e) => setCreateForm((p) => ({ ...p, departmentId: e.target.value }))}
+                  >
+                    <option value="">Tanpa departemen</option>
+                    {departmentOptions.map((dept) => (
+                      <option key={dept.id} value={dept.id}>
+                        {dept.name}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    placeholder="Password (opsional)"
+                    value={createForm.password}
+                    onChange={(e) => setCreateForm((p) => ({ ...p, password: e.target.value }))}
+                  />
+                  <button type="submit">Buat</button>
+                </form>
+                <p className="subtext">Jika password kosong, default: Password123!</p>
+              </section>
+
+              <section className="subpanel timeline-box saas-subpanel">
+                <h4>Daftar user</h4>
+                <div className="timeline-list">
+                  {orderedUsers.map((item) => {
+                    const draft = getDraftFor(item);
+                    const isSelf = user?.id === item.id;
+
+                    return (
+                      <div key={item.id} className="timeline-item">
+                        <strong>{item.name}</strong>
+                        <small>{item.email} • {item.role}</small>
+
+                        <div className="form-inline compact-form" style={{ marginTop: 10 }}>
+                          <input
+                            value={draft.name}
+                            onChange={(e) =>
+                              setEditDrafts((current) => ({
+                                ...current,
+                                [item.id]: { ...draft, name: e.target.value },
+                              }))
+                            }
+                            placeholder="Nama"
+                          />
+                          <input
+                            value={draft.email}
+                            onChange={(e) =>
+                              setEditDrafts((current) => ({
+                                ...current,
+                                [item.id]: { ...draft, email: e.target.value },
+                              }))
+                            }
+                            placeholder="Email"
+                          />
+                          <select
+                            value={draft.role}
+                            onChange={(e) =>
+                              setEditDrafts((current) => ({
+                                ...current,
+                                [item.id]: { ...draft, role: e.target.value },
+                              }))
+                            }
+                          >
+                            <option value="ADMIN">ADMIN</option>
+                            <option value="MANAGER">MANAGER</option>
+                            <option value="STAFF">STAFF</option>
+                          </select>
+                          <select
+                            value={draft.departmentId === null ? "" : draft.departmentId}
+                            onChange={(e) =>
+                              setEditDrafts((current) => ({
+                                ...current,
+                                [item.id]: {
+                                  ...draft,
+                                  departmentId: e.target.value ? Number(e.target.value) : null,
+                                },
+                              }))
+                            }
+                          >
+                            <option value="">Tanpa departemen</option>
+                            {departmentOptions.map((dept) => (
+                              <option key={dept.id} value={dept.id}>
+                                {dept.name}
+                              </option>
+                            ))}
+                          </select>
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              await adminUpdateUser(item.id, {
+                                name: draft.name,
+                                email: draft.email,
+                                role: draft.role,
+                                departmentId: draft.departmentId === "" ? null : draft.departmentId,
+                              });
+                              setEditDrafts((current) => {
+                                const next = { ...current };
+                                delete next[item.id];
+                                return next;
+                              });
+                            }}
+                          >
+                            Simpan
+                          </button>
+                          <button
+                            type="button"
+                            className="ghost-btn"
+                            onClick={() => adminResetPassword(item.id)}
+                            disabled={isSelf}
+                            title={isSelf ? "Tidak untuk akun sendiri" : "Reset password"}
+                          >
+                            Reset
+                          </button>
+                          <button
+                            type="button"
+                            className="ghost-btn"
+                            onClick={() => {
+                              if (isSelf) {
+                                return;
+                              }
+                              const ok = window.confirm(`Hapus user ${item.email}?`);
+                              if (ok) {
+                                adminDeleteUser(item.id);
+                              }
+                            }}
+                            disabled={isSelf}
+                            title={isSelf ? "Tidak untuk akun sendiri" : "Hapus user"}
+                          >
+                            Hapus
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            </section>
+          ) : null}
         </div>
 
         <aside className="stack-col side-col">

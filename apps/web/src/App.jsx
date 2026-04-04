@@ -67,6 +67,7 @@ function App() {
   const [documents, setDocuments] = useState([]);
   const [logs, setLogs] = useState([]);
   const [users, setUsers] = useState([]);
+  const [departments, setDepartments] = useState([]);
   const [notifications, setNotifications] = useState([]);
 
   const [query, setQuery] = useState("");
@@ -97,6 +98,7 @@ function App() {
   const isManagerLike = user?.role === "ADMIN" || user?.role === "MANAGER";
   const canManageCategories = user?.role === "ADMIN";
   const canCreateDocuments = isManagerLike;
+  const isAdmin = user?.role === "ADMIN";
 
   const unreadNotifications = notifications.filter((item) => !item.isRead).length;
   const recentDocuments = dashboard.recentDocuments || [];
@@ -136,6 +138,7 @@ function App() {
         api.get("/categories", { headers: authHeaders }),
         api.get("/documents", { headers: authHeaders }),
         api.get("/users", { headers: authHeaders }),
+        api.get("/departments", { headers: authHeaders }),
         api.get("/notifications", { headers: authHeaders }),
       ];
 
@@ -144,12 +147,13 @@ function App() {
       }
 
       const results = await Promise.all(requests);
-      const [dashboardRes, categoriesRes, documentsRes, usersRes, notificationsRes, logsRes] = results;
+      const [dashboardRes, categoriesRes, documentsRes, usersRes, departmentsRes, notificationsRes, logsRes] = results;
 
       setDashboard(dashboardRes.data);
       setCategories(categoriesRes.data);
       setDocuments(documentsRes.data);
       setUsers(usersRes.data);
+      setDepartments(departmentsRes.data);
       setNotifications(notificationsRes.data);
       setLogs(logsRes?.data?.items || []);
     } catch (requestError) {
@@ -203,7 +207,66 @@ function App() {
     setNotifications([]);
     setDashboard({ totalDocuments: 0, totalUsers: 0, recentDocuments: [], uploadStats: [] });
     setLogs([]);
+    setDepartments([]);
     setPreviewModal(emptyDocumentModal);
+  }
+
+  async function adminCreateUser(payload) {
+    try {
+      await api.post(
+        "/users",
+        {
+          name: payload.name,
+          email: payload.email,
+          role: payload.role,
+          departmentId: payload.departmentId || undefined,
+          password: payload.password || undefined,
+        },
+        { headers },
+      );
+      showToast("User berhasil dibuat.");
+      await loadData();
+    } catch (requestError) {
+      showToast(requestError.response?.data?.message || "Gagal membuat user.", "error");
+    }
+  }
+
+  async function adminUpdateUser(userId, payload) {
+    try {
+      await api.patch(
+        `/users/${userId}`,
+        {
+          ...(payload.name ? { name: payload.name } : {}),
+          ...(payload.email ? { email: payload.email } : {}),
+          ...(payload.role ? { role: payload.role } : {}),
+          ...(payload.departmentId !== undefined ? { departmentId: payload.departmentId } : {}),
+        },
+        { headers },
+      );
+      showToast("User diperbarui.");
+      await loadData();
+    } catch (requestError) {
+      showToast(requestError.response?.data?.message || "Gagal update user.", "error");
+    }
+  }
+
+  async function adminResetPassword(userId) {
+    try {
+      await api.post(`/users/${userId}/reset-password`, {}, { headers });
+      showToast("Password direset ke default (atau sesuai input backend).");
+    } catch (requestError) {
+      showToast(requestError.response?.data?.message || "Gagal reset password.", "error");
+    }
+  }
+
+  async function adminDeleteUser(userId) {
+    try {
+      await api.delete(`/users/${userId}`, { headers });
+      showToast("User dihapus.");
+      await loadData();
+    } catch (requestError) {
+      showToast(requestError.response?.data?.message || "Gagal menghapus user.", "error");
+    }
   }
 
   function showToast(message, type = "success") {
@@ -581,12 +644,20 @@ function App() {
       <div className="main-content">
         {activeSection === "home" ? (
           <HomeSection
+            user={user}
             dashboard={dashboard}
             unreadNotifications={unreadNotifications}
             recentDocuments={recentDocuments}
             notifications={notifications}
             markNotificationRead={markNotificationRead}
             setActiveSection={setActiveSection}
+            users={users}
+            departments={departments}
+            isAdmin={isAdmin}
+            adminCreateUser={adminCreateUser}
+            adminUpdateUser={adminUpdateUser}
+            adminResetPassword={adminResetPassword}
+            adminDeleteUser={adminDeleteUser}
           />
         ) : null}
 
