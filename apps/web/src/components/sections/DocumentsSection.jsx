@@ -2,7 +2,6 @@ import { useMemo, useState } from "react";
 import dayjs from "dayjs";
 
 export default function DocumentsSection({
-  isManagerLike,
   canCreateDocuments,
   canManageCategories,
   uploadForm,

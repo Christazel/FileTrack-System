@@ -8,7 +8,6 @@ export default function PreviewModal({
   documentVersions,
   documentComments,
   documentLogs,
-  versionDrafts,
   setVersionDrafts,
   uploadVersion,
   shareDrafts,
@@ -21,17 +20,14 @@ export default function PreviewModal({
   updateWorkflowStatus,
   decideDocument,
 }) {
-  if (!previewModal.type) {
-    return null;
-  }
-
   const [commentText, setCommentText] = useState("");
   const [decisionNote, setDecisionNote] = useState("");
   const [assignToId, setAssignToId] = useState("");
   const [statusDraft, setStatusDraft] = useState("");
 
   const isManagerLike = user?.role === "ADMIN" || user?.role === "MANAGER";
-  const document = previewModal.document;
+  const document = previewModal.document || {};
+  const documentId = document.id;
 
   const shareCandidates = useMemo(() => {
     if (!Array.isArray(users) || !user) {
@@ -67,6 +63,10 @@ export default function PreviewModal({
       : previewModal.type === "versions"
         ? "Versioning"
         : "Detail";
+
+  if (!previewModal.type) {
+    return null;
+  }
 
   return (
     <div className="modal-backdrop" onClick={closeModal} role="presentation">
@@ -172,7 +172,7 @@ export default function PreviewModal({
                     </select>
                     <button
                       type="button"
-                      onClick={() => assignDocument(document.id, assignToId)}
+                      onClick={() => assignDocument(documentId, assignToId)}
                       disabled={!assignCandidates.length}
                     >
                       Assign
@@ -206,7 +206,7 @@ export default function PreviewModal({
                 </select>
                 <button
                   type="button"
-                  onClick={() => updateWorkflowStatus(document.id, statusDraft)}
+                  onClick={() => updateWorkflowStatus(documentId, statusDraft)}
                   disabled={!statusDraft}
                 >
                   Simpan
@@ -223,14 +223,14 @@ export default function PreviewModal({
                   <button
                     type="button"
                     className="ghost-btn"
-                    onClick={() => decideDocument(document.id, "APPROVED", decisionNote)}
+                    onClick={() => decideDocument(documentId, "APPROVED", decisionNote)}
                   >
                     Approve
                   </button>
                   <button
                     type="button"
                     className="ghost-btn"
-                    onClick={() => decideDocument(document.id, "REJECTED", decisionNote)}
+                    onClick={() => decideDocument(documentId, "REJECTED", decisionNote)}
                   >
                     Reject
                   </button>
@@ -243,14 +243,17 @@ export default function PreviewModal({
               <div className="form-inline version-form">
                 <input
                   type="file"
-                  onChange={(e) =>
+                  onChange={(e) => {
+                    if (!documentId) {
+                      return;
+                    }
                     setVersionDrafts((current) => ({
                       ...current,
-                      [previewModal.document.id]: { file: e.target.files?.[0] || null },
-                    }))
-                  }
+                      [documentId]: { file: e.target.files?.[0] || null },
+                    }));
+                  }}
                 />
-                <button type="button" onClick={() => uploadVersion(previewModal.document.id)}>
+                <button type="button" onClick={() => uploadVersion(documentId)}>
                   Upload versi
                 </button>
               </div>
@@ -261,16 +264,19 @@ export default function PreviewModal({
                 <h4>Share ke user</h4>
                 <div className="form-inline share-form">
                   <select
-                    value={shareDrafts[previewModal.document.id]?.sharedToId || ""}
-                    onChange={(e) =>
+                    value={documentId ? shareDrafts[documentId]?.sharedToId || "" : ""}
+                    onChange={(e) => {
+                      if (!documentId) {
+                        return;
+                      }
                       setShareDrafts((current) => ({
                         ...current,
-                        [previewModal.document.id]: {
-                          ...(current[previewModal.document.id] || {}),
+                        [documentId]: {
+                          ...(current[documentId] || {}),
                           sharedToId: e.target.value,
                         },
-                      }))
-                    }
+                      }));
+                    }}
                   >
                     <option value="">Pilih user</option>
                     {shareCandidates.map((candidate) => (
@@ -281,18 +287,21 @@ export default function PreviewModal({
                   </select>
                   <input
                     placeholder="Pesan share"
-                    value={shareDrafts[previewModal.document.id]?.message || ""}
-                    onChange={(e) =>
+                    value={documentId ? shareDrafts[documentId]?.message || "" : ""}
+                    onChange={(e) => {
+                      if (!documentId) {
+                        return;
+                      }
                       setShareDrafts((current) => ({
                         ...current,
-                        [previewModal.document.id]: {
-                          ...(current[previewModal.document.id] || {}),
+                        [documentId]: {
+                          ...(current[documentId] || {}),
                           message: e.target.value,
                         },
-                      }))
-                    }
+                      }));
+                    }}
                   />
-                  <button type="button" onClick={() => shareDocument(previewModal.document.id)}>
+                  <button type="button" onClick={() => shareDocument(documentId)}>
                     Share
                   </button>
                 </div>

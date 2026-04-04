@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import LoginPage from "./components/LoginPage";
 import Sidebar from "./components/layout/Sidebar";
@@ -89,8 +89,8 @@ function App() {
 
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(10);
-  const [sortBy, setSortBy] = useState("createdAt");
-  const [sortOrder, setSortOrder] = useState("desc");
+  const [sortBy, _setSortBy] = useState("createdAt");
+  const [sortOrder, _setSortOrder] = useState("desc");
 
   const [toasts, setToasts] = useState([]);
   const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem("filetrack_onboarding_seen"));
@@ -103,6 +103,15 @@ function App() {
 
   const unreadNotifications = notifications.filter((item) => !item.isRead).length;
   const recentDocuments = dashboard.recentDocuments || [];
+
+  const showToast = useCallback((message, type = "success") => {
+    const toastId = Date.now();
+    const newToast = { id: toastId, message, type };
+    setToasts((prev) => [...prev, newToast]);
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== toastId));
+    }, 3000);
+  }, []);
 
   useEffect(() => {
     if (!success) {
@@ -124,51 +133,54 @@ function App() {
     return documents.find((document) => document.id === documentOrId) || { id: documentOrId };
   }
 
-  async function loadData(activeToken = token) {
-    if (!activeToken) {
-      return;
-    }
-
-    setLoading(true);
-    setError("");
-
-    try {
-      const authHeaders = { Authorization: `Bearer ${activeToken}` };
-      const requests = [
-        api.get("/dashboard/summary", { headers: authHeaders }),
-        api.get("/categories", { headers: authHeaders }),
-        api.get("/documents", { headers: authHeaders }),
-        api.get("/users", { headers: authHeaders }),
-        api.get("/departments", { headers: authHeaders }),
-        api.get("/notifications", { headers: authHeaders }),
-      ];
-
-      if (isManagerLike) {
-        requests.push(api.get("/logs", { headers: authHeaders }));
+  const loadData = useCallback(
+    async (activeToken) => {
+      if (!activeToken) {
+        return;
       }
 
-      const results = await Promise.all(requests);
-      const [dashboardRes, categoriesRes, documentsRes, usersRes, departmentsRes, notificationsRes, logsRes] = results;
+      setLoading(true);
+      setError("");
 
-      setDashboard(dashboardRes.data);
-      setCategories(categoriesRes.data);
-      setDocuments(documentsRes.data);
-      setUsers(usersRes.data);
-      setDepartments(departmentsRes.data);
-      setNotifications(notificationsRes.data);
-      setLogs(logsRes?.data?.items || []);
-    } catch (requestError) {
-      showToast(requestError.response?.data?.message || "Gagal mengambil data.", "error");
-    } finally {
-      setLoading(false);
-    }
-  }
+      try {
+        const authHeaders = { Authorization: `Bearer ${activeToken}` };
+        const requests = [
+          api.get("/dashboard/summary", { headers: authHeaders }),
+          api.get("/categories", { headers: authHeaders }),
+          api.get("/documents", { headers: authHeaders }),
+          api.get("/users", { headers: authHeaders }),
+          api.get("/departments", { headers: authHeaders }),
+          api.get("/notifications", { headers: authHeaders }),
+        ];
+
+        if (isManagerLike) {
+          requests.push(api.get("/logs", { headers: authHeaders }));
+        }
+
+        const results = await Promise.all(requests);
+        const [dashboardRes, categoriesRes, documentsRes, usersRes, departmentsRes, notificationsRes, logsRes] = results;
+
+        setDashboard(dashboardRes.data);
+        setCategories(categoriesRes.data);
+        setDocuments(documentsRes.data);
+        setUsers(usersRes.data);
+        setDepartments(departmentsRes.data);
+        setNotifications(notificationsRes.data);
+        setLogs(logsRes?.data?.items || []);
+      } catch (requestError) {
+        showToast(requestError.response?.data?.message || "Gagal mengambil data.", "error");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [isManagerLike, showToast],
+  );
 
   useEffect(() => {
     if (token && user) {
       loadData(token);
     }
-  }, [token, user?.role]);
+  }, [token, user, loadData]);
 
   useEffect(() => {
     return () => {
@@ -226,7 +238,7 @@ function App() {
         { headers },
       );
       showToast("User berhasil dibuat.");
-      await loadData();
+      await loadData(token);
     } catch (requestError) {
       showToast(requestError.response?.data?.message || "Gagal membuat user.", "error");
     }
@@ -245,7 +257,7 @@ function App() {
         { headers },
       );
       showToast("User diperbarui.");
-      await loadData();
+      await loadData(token);
     } catch (requestError) {
       showToast(requestError.response?.data?.message || "Gagal update user.", "error");
     }
@@ -264,7 +276,7 @@ function App() {
     try {
       await api.delete(`/users/${userId}`, { headers });
       showToast("User dihapus.");
-      await loadData();
+      await loadData(token);
     } catch (requestError) {
       showToast(requestError.response?.data?.message || "Gagal menghapus user.", "error");
     }
@@ -278,7 +290,7 @@ function App() {
         { headers },
       );
       showToast("Departemen berhasil dibuat.");
-      await loadData();
+      await loadData(token);
     } catch (requestError) {
       showToast(requestError.response?.data?.message || "Gagal membuat departemen.", "error");
     }
@@ -292,7 +304,7 @@ function App() {
         { headers },
       );
       showToast("Departemen diperbarui.");
-      await loadData();
+      await loadData(token);
     } catch (requestError) {
       showToast(requestError.response?.data?.message || "Gagal update departemen.", "error");
     }
@@ -302,29 +314,10 @@ function App() {
     try {
       await api.delete(`/departments/${departmentId}`, { headers });
       showToast("Departemen dihapus.");
-      await loadData();
+      await loadData(token);
     } catch (requestError) {
       showToast(requestError.response?.data?.message || "Gagal menghapus departemen.", "error");
     }
-  }
-
-  function showToast(message, type = "success") {
-    const toastId = Date.now();
-    const newToast = { id: toastId, message, type };
-    setToasts((prev) => [...prev, newToast]);
-    setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== toastId));
-    }, 3000);
-  }
-
-  function handleSortClick(column) {
-    if (sortBy === column) {
-      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-    } else {
-      setSortBy(column);
-      setSortOrder("asc");
-    }
-    setCurrentPage(1);
   }
 
   const sortedDocuments = useMemo(() => {
@@ -395,7 +388,7 @@ function App() {
 
       setUploadForm({ title: "", categoryId: "", tags: "", file: null });
       showToast("Dokumen berhasil diunggah.");
-      await loadData();
+      await loadData(token);
     } catch (requestError) {
       showToast(requestError.response?.data?.message || "Upload gagal.", "error");
     }
@@ -411,7 +404,7 @@ function App() {
       await api.post("/categories", { name: newCategory.trim() }, { headers });
       setNewCategory("");
       showToast("Kategori berhasil ditambahkan.");
-      await loadData();
+      await loadData(token);
     } catch (requestError) {
       showToast(requestError.response?.data?.message || "Gagal membuat kategori.", "error");
     }
@@ -421,7 +414,7 @@ function App() {
     try {
       await api.patch(`/categories/${categoryId}`, { name }, { headers });
       showToast("Kategori diperbarui.");
-      await loadData();
+      await loadData(token);
     } catch (requestError) {
       showToast(requestError.response?.data?.message || "Gagal update kategori.", "error");
     }
@@ -431,7 +424,7 @@ function App() {
     try {
       await api.delete(`/categories/${categoryId}`, { headers });
       showToast("Kategori dihapus.");
-      await loadData();
+      await loadData(token);
     } catch (requestError) {
       showToast(requestError.response?.data?.message || "Gagal menghapus kategori.", "error");
     }
@@ -452,7 +445,7 @@ function App() {
       link.remove();
       window.URL.revokeObjectURL(url);
       showToast("Download berhasil.");
-      await loadData();
+      await loadData(token);
     } catch (requestError) {
       showToast(requestError.response?.data?.message || "Gagal download dokumen.", "error");
     }
@@ -510,7 +503,7 @@ function App() {
         { headers },
       );
       showToast("Komentar ditambahkan.");
-      await loadData();
+      await loadData(token);
       await openVersions(docId);
     } catch (requestError) {
       showToast(requestError.response?.data?.message || "Gagal menambah komentar.", "error");
@@ -530,7 +523,7 @@ function App() {
         { headers },
       );
       showToast("Dokumen berhasil di-assign.");
-      await loadData();
+      await loadData(token);
       await openVersions(docId);
     } catch (requestError) {
       showToast(requestError.response?.data?.message || "Gagal assign dokumen.", "error");
@@ -550,7 +543,7 @@ function App() {
         { headers },
       );
       showToast("Status diperbarui.");
-      await loadData();
+      await loadData(token);
       await openVersions(docId);
     } catch (requestError) {
       showToast(requestError.response?.data?.message || "Gagal update status.", "error");
@@ -565,7 +558,7 @@ function App() {
         { headers },
       );
       showToast("Keputusan tersimpan.");
-      await loadData();
+      await loadData(token);
       await openVersions(docId);
     } catch (requestError) {
       showToast(requestError.response?.data?.message || "Gagal menyimpan keputusan.", "error");
@@ -591,7 +584,7 @@ function App() {
       });
       setVersionDrafts((current) => ({ ...current, [docId]: { file: null } }));
       showToast("Versi baru berhasil ditambahkan.");
-      await loadData();
+      await loadData(token);
       await openVersions(docId);
     } catch (requestError) {
       showToast(requestError.response?.data?.message || "Gagal menambah versi.", "error");
@@ -616,7 +609,7 @@ function App() {
       );
       setShareDrafts((current) => ({ ...current, [docId]: { sharedToId: "", message: "" } }));
       showToast("Dokumen berhasil dibagikan.");
-      await loadData();
+      await loadData(token);
       await openVersions(docId);
     } catch (requestError) {
       showToast(requestError.response?.data?.message || "Gagal membagikan dokumen.", "error");
@@ -626,7 +619,7 @@ function App() {
   async function markNotificationRead(notificationId) {
     try {
       await api.patch(`/notifications/${notificationId}/read`, {}, { headers });
-      await loadData();
+      await loadData(token);
     } catch (requestError) {
       showToast(requestError.response?.data?.message || "Gagal memperbarui notifikasi.", "error");
     }
@@ -635,14 +628,14 @@ function App() {
   async function markAllNotificationsRead() {
     try {
       await api.patch("/notifications/read-all", {}, { headers });
-      await loadData();
+      await loadData(token);
     } catch (requestError) {
       showToast(requestError.response?.data?.message || "Gagal menandai notifikasi.", "error");
     }
   }
 
   async function refreshAll() {
-    await loadData();
+    await loadData(token);
     showToast("Data terbaru berhasil dimuat.");
   }
 
@@ -725,7 +718,6 @@ function App() {
 
         {activeSection === "documents" ? (
           <DocumentsSection
-            isManagerLike={isManagerLike}
             canCreateDocuments={canCreateDocuments}
             canManageCategories={canManageCategories}
             uploadForm={uploadForm}
@@ -783,7 +775,6 @@ function App() {
           documentVersions={documentVersions}
           documentComments={documentComments}
           documentLogs={documentLogs}
-          versionDrafts={versionDrafts}
           setVersionDrafts={setVersionDrafts}
           uploadVersion={uploadVersion}
           shareDrafts={shareDrafts}

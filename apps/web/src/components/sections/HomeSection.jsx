@@ -33,9 +33,6 @@ export default function HomeSection({
     { label: "Status", value: unreadNotifications > 0 ? "Needs action" : "Healthy" },
   ];
 
-  const departmentOptions = Array.isArray(departments) ? departments : [];
-  const userList = Array.isArray(users) ? users : [];
-
   const [createForm, setCreateForm] = useState({
     name: "",
     email: "",
@@ -49,12 +46,14 @@ export default function HomeSection({
   const [newDepartment, setNewDepartment] = useState("");
 
   const orderedUsers = useMemo(() => {
+    const userList = Array.isArray(users) ? users : [];
     return [...userList].sort((a, b) => (a.name || "").localeCompare(b.name || ""));
-  }, [userList]);
+  }, [users]);
 
   const orderedDepartments = useMemo(() => {
+    const departmentOptions = Array.isArray(departments) ? departments : [];
     return [...departmentOptions].sort((a, b) => (a.name || "").localeCompare(b.name || ""));
-  }, [departmentOptions]);
+  }, [departments]);
 
   function getDraftFor(target) {
     const existing = editDrafts[target.id];
@@ -278,7 +277,7 @@ export default function HomeSection({
                     onChange={(e) => setCreateForm((p) => ({ ...p, departmentId: e.target.value }))}
                   >
                     <option value="">Tanpa departemen</option>
-                    {departmentOptions.map((dept) => (
+                    {orderedDepartments.map((dept) => (
                       <option key={dept.id} value={dept.id}>
                         {dept.name}
                       </option>
@@ -353,7 +352,7 @@ export default function HomeSection({
                             }
                           >
                             <option value="">Tanpa departemen</option>
-                            {departmentOptions.map((dept) => (
+                            {orderedDepartments.map((dept) => (
                               <option key={dept.id} value={dept.id}>
                                 {dept.name}
                               </option>

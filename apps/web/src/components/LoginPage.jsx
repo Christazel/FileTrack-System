@@ -10,7 +10,7 @@ export default function LoginPage({
   error,
   success,
 }) {
-  function useDemoAccount(nextEmail) {
+  function setDemoAccount(nextEmail) {
     setEmail(nextEmail);
     setPassword("Password123!");
   }
@@ -69,13 +69,13 @@ export default function LoginPage({
                 <li>staff@filetrack.local</li>
               </ul>
               <div className="demo-actions" role="group" aria-label="Pilih role demo">
-                <button type="button" className="ghost-btn" onClick={() => useDemoAccount("admin@filetrack.local")}>
+                <button type="button" className="ghost-btn" onClick={() => setDemoAccount("admin@filetrack.local")}>
                   Admin
                 </button>
-                <button type="button" className="ghost-btn" onClick={() => useDemoAccount("manager@filetrack.local")}>
+                <button type="button" className="ghost-btn" onClick={() => setDemoAccount("manager@filetrack.local")}>
                   Manager
                 </button>
-                <button type="button" className="ghost-btn" onClick={() => useDemoAccount("staff@filetrack.local")}>
+                <button type="button" className="ghost-btn" onClick={() => setDemoAccount("staff@filetrack.local")}>
                   Staff
                 </button>
               </div>
