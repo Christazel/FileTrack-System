@@ -2000,15 +2000,22 @@ tbody tr:hover td { color: var(--ink); }
   display: flex;
   align-items: center;
   gap: 10px;
+  min-width: 0;
 }
 
 .home-stat-icon {
   width: 34px;
   height: 34px;
+  flex: 0 0 34px;
+  min-width: 34px;
   border-radius: 10px;
   display: grid;
   place-items: center;
-  font-size: 1rem;
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  overflow: hidden;
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
