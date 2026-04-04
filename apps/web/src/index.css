@@ -784,7 +784,7 @@ tbody tr:hover td { color: var(--ink); }
 .form-inline {
   display: grid;
   grid-template-columns: 1fr 1fr auto;
-  gap: 10px;
+  gap: 14px;
   align-items: end;
 }
 
