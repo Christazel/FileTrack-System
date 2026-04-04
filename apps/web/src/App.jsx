@@ -12,33 +12,6 @@ import OnboardingOverlay from "./components/ui/OnboardingOverlay";
 
 const api = axios.create({ baseURL: "/api" });
 
-function readStoredValue(key) {
-  return localStorage.getItem(key) || sessionStorage.getItem(key) || "";
-}
-
-function writeStoredValue(key, value) {
-  localStorage.setItem(key, value);
-  sessionStorage.setItem(key, value);
-}
-
-function removeStoredValue(key) {
-  localStorage.removeItem(key);
-  sessionStorage.removeItem(key);
-}
-
-function readStoredJson(key) {
-  const raw = localStorage.getItem(key) || sessionStorage.getItem(key);
-  if (!raw) {
-    return null;
-  }
-  try {
-    return JSON.parse(raw);
-  } catch {
-    removeStoredValue(key);
-    return null;
-  }
-}
-
 const emptyDocumentModal = {
   type: null,
   document: null,
@@ -78,9 +51,8 @@ const publicWorkflow = [
 ];
 
 function App() {
-  const [token, setToken] = useState(readStoredValue("filetrack_token"));
-  const [user, setUser] = useState(() => readStoredJson("filetrack_user"));
-  const [restoringSession, setRestoringSession] = useState(false);
+  const [token, setToken] = useState("");
+  const [user, setUser] = useState(null);
   const [email, setEmail] = useState("admin@filetrack.local");
   const [password, setPassword] = useState("Password123!");
   const [error, setError] = useState("");
@@ -139,57 +111,11 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (!token) {
-      setRestoringSession(false);
-      return;
-    }
-
-    if (user) {
-      setRestoringSession(false);
-      return;
-    }
-
-    let cancelled = false;
-
-    async function restore() {
-      setRestoringSession(true);
-      try {
-        const authHeaders = { Authorization: `Bearer ${token}` };
-        const response = await api.get("/auth/me", { headers: authHeaders });
-        if (cancelled) {
-          return;
-        }
-        setUser(response.data);
-        writeStoredValue("filetrack_user", JSON.stringify(response.data));
-      } catch (requestError) {
-        if (cancelled) {
-          return;
-        }
-
-        const status = requestError.response?.status;
-        if (status === 401 || status === 403) {
-          removeStoredValue("filetrack_token");
-          removeStoredValue("filetrack_user");
-          setToken("");
-          setUser(null);
-          showToast("Sesi login berakhir. Silakan login ulang.", "error");
-          return;
-        }
-
-        showToast("Gagal memulihkan sesi. Silakan refresh atau login ulang.", "error");
-      } finally {
-        if (!cancelled) {
-          setRestoringSession(false);
-        }
-      }
-    }
-
-    restore();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [token, user, showToast]);
+    localStorage.removeItem("filetrack_token");
+    localStorage.removeItem("filetrack_user");
+    sessionStorage.removeItem("filetrack_token");
+    sessionStorage.removeItem("filetrack_user");
+  }, []);
 
   useEffect(() => {
     if (!success) {
@@ -278,9 +204,6 @@ function App() {
       const nextToken = response.data.token;
       const nextUser = response.data.user;
 
-      writeStoredValue("filetrack_token", nextToken);
-      writeStoredValue("filetrack_user", JSON.stringify(nextUser));
-
       setToken(nextToken);
       setUser(nextUser);
       showToast("Login berhasil.");
@@ -290,8 +213,6 @@ function App() {
   }
 
   function logout() {
-    removeStoredValue("filetrack_token");
-    removeStoredValue("filetrack_user");
     setToken("");
     setUser(null);
     setDocuments([]);
@@ -735,7 +656,7 @@ function App() {
     setDocumentLogs([]);
   };
 
-  if (!token) {
+  if (!token || !user) {
     return (
       <LoginPage
         publicProofPoints={publicProofPoints}
@@ -749,14 +670,6 @@ function App() {
         error={error}
         success={success}
       />
-    );
-  }
-
-  if (!user) {
-    return (
-      <main className="app-shell" style={{ display: "grid", placeItems: "center", minHeight: "100vh" }}>
-        <p className="status-note">{restoringSession ? "Memulihkan sesi..." : "Memuat profil..."}</p>
-      </main>
     );
   }
 
