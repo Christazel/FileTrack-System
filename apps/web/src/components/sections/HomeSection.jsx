@@ -234,7 +234,7 @@ export default function HomeSection({
               <section className="subpanel saas-subpanel">
                 <h4>Buat user</h4>
                 <form
-                  className="form-inline upload-form"
+                  className="form-inline upload-form spacious"
                   onSubmit={async (e) => {
                     e.preventDefault();
                     if (!createForm.name.trim() || !createForm.email.trim()) {
@@ -305,7 +305,7 @@ export default function HomeSection({
                         <strong>{item.name}</strong>
                         <small>{item.email} • {item.role}</small>
 
-                        <div className="form-inline upload-form" style={{ marginTop: 10 }}>
+                        <div className="form-inline upload-form spacious" style={{ marginTop: 10 }}>
                           <input
                             value={draft.name}
                             onChange={(e) =>

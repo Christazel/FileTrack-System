@@ -788,6 +788,10 @@ tbody tr:hover td { color: var(--ink); }
   align-items: end;
 }
 
+.form-inline.spacious {
+  gap: 18px;
+}
+
 .form-inline input,
 .form-inline select,
 .form-inline button {
