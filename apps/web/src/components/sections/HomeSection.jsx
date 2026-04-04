@@ -16,6 +16,9 @@ export default function HomeSection({
   adminUpdateUser,
   adminResetPassword,
   adminDeleteUser,
+  adminCreateDepartment,
+  adminUpdateDepartment,
+  adminDeleteDepartment,
 }) {
   const summaryCards = [
     { icon: "DOC", label: "Total Dokumen", value: dashboard.totalDocuments, description: "File aktif di sistem" },
@@ -42,10 +45,16 @@ export default function HomeSection({
   });
 
   const [editDrafts, setEditDrafts] = useState({});
+  const [departmentDrafts, setDepartmentDrafts] = useState({});
+  const [newDepartment, setNewDepartment] = useState("");
 
   const orderedUsers = useMemo(() => {
     return [...userList].sort((a, b) => (a.name || "").localeCompare(b.name || ""));
   }, [userList]);
+
+  const orderedDepartments = useMemo(() => {
+    return [...departmentOptions].sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+  }, [departmentOptions]);
 
   function getDraftFor(target) {
     const existing = editDrafts[target.id];
@@ -145,6 +154,83 @@ export default function HomeSection({
                   <h3>Kelola user</h3>
                 </div>
               </div>
+
+              <section className="subpanel saas-subpanel">
+                <h4>Kelola departemen</h4>
+                <form
+                  className="form-inline compact-form"
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    if (!newDepartment.trim()) {
+                      return;
+                    }
+                    await adminCreateDepartment({ name: newDepartment.trim() });
+                    setNewDepartment("");
+                  }}
+                >
+                  <input
+                    placeholder="Nama departemen"
+                    value={newDepartment}
+                    onChange={(e) => setNewDepartment(e.target.value)}
+                  />
+                  <button type="submit">Tambah</button>
+                </form>
+
+                <div className="timeline-list" style={{ marginTop: 12 }}>
+                  {orderedDepartments.length ? (
+                    orderedDepartments.map((dept) => {
+                      const draft = departmentDrafts[dept.id] ?? dept.name;
+                      return (
+                        <div key={dept.id} className="timeline-item">
+                          <strong>{dept.name}</strong>
+                          <div className="form-inline compact-form" style={{ marginTop: 10 }}>
+                            <input
+                              value={draft}
+                              onChange={(e) =>
+                                setDepartmentDrafts((current) => ({
+                                  ...current,
+                                  [dept.id]: e.target.value,
+                                }))
+                              }
+                              placeholder="Nama departemen"
+                            />
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                await adminUpdateDepartment(dept.id, { name: String(draft || "").trim() });
+                                setDepartmentDrafts((current) => {
+                                  const next = { ...current };
+                                  delete next[dept.id];
+                                  return next;
+                                });
+                              }}
+                              disabled={!String(draft || "").trim()}
+                            >
+                              Simpan
+                            </button>
+                            <button
+                              type="button"
+                              className="ghost-btn"
+                              onClick={() => {
+                                const ok = window.confirm(`Hapus departemen ${dept.name}?`);
+                                if (ok) {
+                                  adminDeleteDepartment(dept.id);
+                                }
+                              }}
+                            >
+                              Hapus
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div className="timeline-item">
+                      <span>Belum ada departemen</span>
+                    </div>
+                  )}
+                </div>
+              </section>
 
               <section className="subpanel saas-subpanel">
                 <h4>Buat user</h4>

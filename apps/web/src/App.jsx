@@ -269,6 +269,44 @@ function App() {
     }
   }
 
+  async function adminCreateDepartment(payload) {
+    try {
+      await api.post(
+        "/departments",
+        { name: payload.name },
+        { headers },
+      );
+      showToast("Departemen berhasil dibuat.");
+      await loadData();
+    } catch (requestError) {
+      showToast(requestError.response?.data?.message || "Gagal membuat departemen.", "error");
+    }
+  }
+
+  async function adminUpdateDepartment(departmentId, payload) {
+    try {
+      await api.patch(
+        `/departments/${departmentId}`,
+        { name: payload.name },
+        { headers },
+      );
+      showToast("Departemen diperbarui.");
+      await loadData();
+    } catch (requestError) {
+      showToast(requestError.response?.data?.message || "Gagal update departemen.", "error");
+    }
+  }
+
+  async function adminDeleteDepartment(departmentId) {
+    try {
+      await api.delete(`/departments/${departmentId}`, { headers });
+      showToast("Departemen dihapus.");
+      await loadData();
+    } catch (requestError) {
+      showToast(requestError.response?.data?.message || "Gagal menghapus departemen.", "error");
+    }
+  }
+
   function showToast(message, type = "success") {
     const toastId = Date.now();
     const newToast = { id: toastId, message, type };
@@ -658,6 +696,9 @@ function App() {
             adminUpdateUser={adminUpdateUser}
             adminResetPassword={adminResetPassword}
             adminDeleteUser={adminDeleteUser}
+            adminCreateDepartment={adminCreateDepartment}
+            adminUpdateDepartment={adminUpdateDepartment}
+            adminDeleteDepartment={adminDeleteDepartment}
           />
         ) : null}
 
