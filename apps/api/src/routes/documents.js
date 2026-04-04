@@ -636,6 +636,9 @@ router.get("/:id/tracking", authRequired, async (req, res) => {
       tags: true,
       versions: {
         orderBy: { versionNumber: "desc" },
+        include: {
+          uploadedBy: { select: { id: true, name: true, role: true } },
+        },
       },
       shares: {
         orderBy: { createdAt: "desc" },

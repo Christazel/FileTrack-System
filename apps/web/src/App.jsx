@@ -84,6 +84,7 @@ function App() {
   const [documentVersions, setDocumentVersions] = useState([]);
   const [documentShares, setDocumentShares] = useState([]);
   const [documentComments, setDocumentComments] = useState([]);
+  const [documentLogs, setDocumentLogs] = useState([]);
   const [activeSection, setActiveSection] = useState("home");
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -483,15 +484,14 @@ function App() {
     const activeDocument = resolveDocument(doc);
 
     try {
-      const [versionsRes, sharesRes, commentsRes] = await Promise.all([
-        api.get(`/documents/${activeDocument.id}/versions`, { headers }),
-        api.get(`/documents/${activeDocument.id}/shares`, { headers }),
-        api.get(`/documents/${activeDocument.id}/comments`, { headers }),
-      ]);
-      setDocumentVersions(versionsRes.data);
-      setDocumentShares(sharesRes.data);
-      setDocumentComments(commentsRes.data);
-      setPreviewModal({ type: "versions", document: activeDocument, blobUrl: "" });
+      const trackingRes = await api.get(`/documents/${activeDocument.id}/tracking`, { headers });
+      const tracked = trackingRes.data;
+
+      setDocumentVersions(tracked.versions || []);
+      setDocumentShares(tracked.shares || []);
+      setDocumentComments(tracked.comments || []);
+      setDocumentLogs(tracked.logs || []);
+      setPreviewModal({ type: "versions", document: tracked, blobUrl: "" });
     } catch (requestError) {
       showToast(requestError.response?.data?.message || "Gagal memuat versi dokumen.", "error");
     }
@@ -661,6 +661,7 @@ function App() {
     setDocumentVersions([]);
     setDocumentShares([]);
     setDocumentComments([]);
+    setDocumentLogs([]);
   };
 
   if (!token || !user) {
@@ -781,6 +782,7 @@ function App() {
           documentShares={documentShares}
           documentVersions={documentVersions}
           documentComments={documentComments}
+          documentLogs={documentLogs}
           versionDrafts={versionDrafts}
           setVersionDrafts={setVersionDrafts}
           uploadVersion={uploadVersion}

@@ -7,6 +7,7 @@ export default function PreviewModal({
   documentShares,
   documentVersions,
   documentComments,
+  documentLogs,
   versionDrafts,
   setVersionDrafts,
   uploadVersion,
@@ -310,6 +311,25 @@ export default function PreviewModal({
                     </small>
                   </div>
                 ))}
+              </div>
+            </section>
+
+            <section className="subpanel timeline-box saas-subpanel">
+              <h4>Aktivitas</h4>
+              <div className="timeline-list">
+                {documentLogs?.length ? (
+                  documentLogs.map((item) => (
+                    <div key={item.id} className="timeline-item">
+                      <strong>{item.action}</strong>
+                      <span>{item.detail || "-"}</span>
+                      <small>{item.user?.name} • {dayjs(item.timestamp).format("DD MMM YYYY HH:mm")}</small>
+                    </div>
+                  ))
+                ) : (
+                  <div className="timeline-item">
+                    <span>Belum ada aktivitas</span>
+                  </div>
+                )}
               </div>
             </section>
 
