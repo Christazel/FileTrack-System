@@ -416,6 +416,26 @@ function App() {
     }
   }
 
+  async function adminUpdateCategory(categoryId, name) {
+    try {
+      await api.patch(`/categories/${categoryId}`, { name }, { headers });
+      showToast("Kategori diperbarui.");
+      await loadData();
+    } catch (requestError) {
+      showToast(requestError.response?.data?.message || "Gagal update kategori.", "error");
+    }
+  }
+
+  async function adminDeleteCategory(categoryId) {
+    try {
+      await api.delete(`/categories/${categoryId}`, { headers });
+      showToast("Kategori dihapus.");
+      await loadData();
+    } catch (requestError) {
+      showToast(requestError.response?.data?.message || "Gagal menghapus kategori.", "error");
+    }
+  }
+
   async function downloadDocument(id, originalName) {
     try {
       const response = await api.get(`/documents/${id}/download`, {
@@ -714,6 +734,8 @@ function App() {
             newCategory={newCategory}
             setNewCategory={setNewCategory}
             createCategory={createCategory}
+            adminUpdateCategory={adminUpdateCategory}
+            adminDeleteCategory={adminDeleteCategory}
             resetFilters={resetFilters}
             searchDocuments={searchDocuments}
             query={query}

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import dayjs from "dayjs";
 
 export default function DocumentsSection({
@@ -12,6 +12,8 @@ export default function DocumentsSection({
   newCategory,
   setNewCategory,
   createCategory,
+  adminUpdateCategory,
+  adminDeleteCategory,
   resetFilters,
   searchDocuments,
   query,
@@ -32,6 +34,11 @@ export default function DocumentsSection({
   downloadDocument,
 }) {
   const [showTips, setShowTips] = useState(true);
+  const [categoryDrafts, setCategoryDrafts] = useState({});
+
+  const orderedCategories = useMemo(() => {
+    return [...categories].sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+  }, [categories]);
 
   return (
     <section className="dashboard-grid documents-grid documents-shell-saas">
@@ -94,6 +101,65 @@ export default function DocumentsSection({
               />
               <button type="submit">Tambah</button>
             </form>
+
+            <div className="notification-list" style={{ marginTop: 12 }}>
+              {orderedCategories.length ? (
+                orderedCategories.map((cat) => {
+                  const draft = categoryDrafts[cat.id] ?? cat.name;
+                  return (
+                    <div key={cat.id} className="notification-item static">
+                      <strong>{cat.name}</strong>
+                      <div className="form-inline compact-form" style={{ marginTop: 10 }}>
+                        <input
+                          value={draft}
+                          onChange={(e) =>
+                            setCategoryDrafts((current) => ({
+                              ...current,
+                              [cat.id]: e.target.value,
+                            }))
+                          }
+                          placeholder="Nama kategori"
+                        />
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            const nextName = String(draft || "").trim();
+                            if (!nextName) {
+                              return;
+                            }
+                            await adminUpdateCategory(cat.id, nextName);
+                            setCategoryDrafts((current) => {
+                              const next = { ...current };
+                              delete next[cat.id];
+                              return next;
+                            });
+                          }}
+                          disabled={!String(draft || "").trim()}
+                        >
+                          Simpan
+                        </button>
+                        <button
+                          type="button"
+                          className="ghost-btn"
+                          onClick={() => {
+                            const ok = window.confirm(`Hapus kategori ${cat.name}?`);
+                            if (ok) {
+                              adminDeleteCategory(cat.id);
+                            }
+                          }}
+                        >
+                          Hapus
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="notification-item static">
+                  <strong>Belum ada kategori.</strong>
+                </div>
+              )}
+            </div>
           </section>
         ) : null}
 

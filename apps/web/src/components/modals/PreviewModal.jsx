@@ -36,7 +36,15 @@ export default function PreviewModal({
     if (!Array.isArray(users) || !user) {
       return [];
     }
-    return users.filter((candidate) => candidate.id !== user.id);
+    const base = users.filter((candidate) => candidate.id !== user.id);
+
+    if (user.role === "ADMIN") {
+      return base;
+    }
+
+    return base.filter(
+      (candidate) => candidate.role === "ADMIN" || (candidate.departmentId && candidate.departmentId === user.departmentId),
+    );
   }, [users, user]);
 
   const assignCandidates = useMemo(() => {
