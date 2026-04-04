@@ -26,7 +26,55 @@ router.post("/", authRequired, requireRoles("ADMIN"), async (req, res) => {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ message: "Input kategori tidak valid.", errors: error.issues });
     }
+    if (error?.code === "P2002") {
+      return res.status(409).json({ message: "Nama kategori sudah digunakan." });
+    }
     return res.status(500).json({ message: "Gagal membuat kategori." });
+  }
+});
+
+router.patch("/:id", authRequired, requireRoles("ADMIN"), async (req, res) => {
+  const id = Number(req.params.id);
+
+  try {
+    const data = categorySchema.parse(req.body);
+    const updated = await prisma.category.update({
+      where: { id },
+      data,
+    });
+    return res.json(updated);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ message: "Input kategori tidak valid.", errors: error.issues });
+    }
+
+    if (error?.code === "P2002") {
+      return res.status(409).json({ message: "Nama kategori sudah digunakan." });
+    }
+
+    if (error?.code === "P2025") {
+      return res.status(404).json({ message: "Kategori tidak ditemukan." });
+    }
+
+    return res.status(500).json({ message: "Gagal mengubah kategori.", error: error.message });
+  }
+});
+
+router.delete("/:id", authRequired, requireRoles("ADMIN"), async (req, res) => {
+  const id = Number(req.params.id);
+
+  try {
+    await prisma.category.delete({ where: { id } });
+    return res.json({ message: "Kategori dihapus." });
+  } catch (error) {
+    if (error?.code === "P2025") {
+      return res.status(404).json({ message: "Kategori tidak ditemukan." });
+    }
+
+    return res.status(409).json({
+      message: "Kategori tidak bisa dihapus karena masih dipakai dokumen.",
+      error: error.message,
+    });
   }
 });
 
