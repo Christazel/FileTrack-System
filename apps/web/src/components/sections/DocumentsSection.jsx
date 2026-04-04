@@ -3,6 +3,8 @@ import dayjs from "dayjs";
 
 export default function DocumentsSection({
   isManagerLike,
+  canCreateDocuments,
+  canManageCategories,
   uploadForm,
   setUploadForm,
   handleUpload,
@@ -34,47 +36,49 @@ export default function DocumentsSection({
   return (
     <section className="dashboard-grid documents-grid documents-shell-saas">
       <div className="stack-col">
-        <section className="panel saas-panel">
-          <div className="panel-heading">
-            <div>
-              <p className="eyebrow">Upload</p>
-              <h3>Tambah dokumen baru</h3>
+        {canCreateDocuments ? (
+          <section className="panel saas-panel">
+            <div className="panel-heading">
+              <div>
+                <p className="eyebrow">Upload</p>
+                <h3>Tambah dokumen baru</h3>
+              </div>
             </div>
-          </div>
-          <form className="form-inline upload-form" onSubmit={handleUpload}>
-            <input
-              placeholder="Judul dokumen"
-              value={uploadForm.title}
-              onChange={(e) => setUploadForm((p) => ({ ...p, title: e.target.value }))}
-              required
-            />
-            <select
-              value={uploadForm.categoryId}
-              onChange={(e) => setUploadForm((p) => ({ ...p, categoryId: e.target.value }))}
-              required
-            >
-              <option value="">Pilih kategori</option>
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
-            <input
-              placeholder="Tag, pisahkan koma"
-              value={uploadForm.tags}
-              onChange={(e) => setUploadForm((p) => ({ ...p, tags: e.target.value }))}
-            />
-            <input
-              type="file"
-              onChange={(e) => setUploadForm((p) => ({ ...p, file: e.target.files?.[0] || null }))}
-              required
-            />
-            <button type="submit">Upload</button>
-          </form>
-        </section>
+            <form className="form-inline upload-form" onSubmit={handleUpload}>
+              <input
+                placeholder="Judul dokumen"
+                value={uploadForm.title}
+                onChange={(e) => setUploadForm((p) => ({ ...p, title: e.target.value }))}
+                required
+              />
+              <select
+                value={uploadForm.categoryId}
+                onChange={(e) => setUploadForm((p) => ({ ...p, categoryId: e.target.value }))}
+                required
+              >
+                <option value="">Pilih kategori</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+              <input
+                placeholder="Tag, pisahkan koma"
+                value={uploadForm.tags}
+                onChange={(e) => setUploadForm((p) => ({ ...p, tags: e.target.value }))}
+              />
+              <input
+                type="file"
+                onChange={(e) => setUploadForm((p) => ({ ...p, file: e.target.files?.[0] || null }))}
+                required
+              />
+              <button type="submit">Upload</button>
+            </form>
+          </section>
+        ) : null}
 
-        {isManagerLike ? (
+        {canManageCategories ? (
           <section className="panel saas-panel">
             <div className="panel-heading">
               <div>
@@ -109,7 +113,6 @@ export default function DocumentsSection({
             </div>
           </div>
           <div className="search-box">
-            <span aria-hidden="true">🔍</span>
             <input
               placeholder="Cari dokumen..."
               value={query}
@@ -144,7 +147,12 @@ export default function DocumentsSection({
                 <div key={doc.id} className="doc-card interactive saas-card">
                   <div className="doc-header">
                     <h4>{doc.title}</h4>
-                    <span className="chip soft">{doc.category?.name}</span>
+                    <div className="chip-row">
+                      <span className="chip soft">{doc.category?.name}</span>
+                      {doc.workflowStatus ? <span className="chip soft">{doc.workflowStatus}</span> : null}
+                      {doc.approvalStatus ? <span className="chip soft">{doc.approvalStatus}</span> : null}
+                      {doc.assignedTo?.name ? <span className="chip soft">Assign: {doc.assignedTo.name}</span> : null}
+                    </div>
                   </div>
                   <div className="doc-meta">
                     <span>{doc.originalName}</span>
@@ -187,7 +195,7 @@ export default function DocumentsSection({
               ))
             ) : (
               <div className="empty-state">
-                <p>📂 Belum ada dokumen</p>
+                <p>Belum ada dokumen</p>
                 <span>Mulai upload dokumen pertama Anda</span>
               </div>
             )}

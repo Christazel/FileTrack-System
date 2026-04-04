@@ -1,3 +1,4 @@
+import { useMemo, useState } from "react";
 import dayjs from "dayjs";
 
 export default function PreviewModal({
@@ -5,6 +6,7 @@ export default function PreviewModal({
   closeModal,
   documentShares,
   documentVersions,
+  documentComments,
   versionDrafts,
   setVersionDrafts,
   uploadVersion,
@@ -13,10 +15,42 @@ export default function PreviewModal({
   users,
   user,
   shareDocument,
+  addComment,
+  assignDocument,
+  updateWorkflowStatus,
+  decideDocument,
 }) {
   if (!previewModal.type) {
     return null;
   }
+
+  const [commentText, setCommentText] = useState("");
+  const [decisionNote, setDecisionNote] = useState("");
+  const [assignToId, setAssignToId] = useState("");
+  const [statusDraft, setStatusDraft] = useState("");
+
+  const isManagerLike = user?.role === "ADMIN" || user?.role === "MANAGER";
+  const document = previewModal.document;
+
+  const shareCandidates = useMemo(() => {
+    if (!Array.isArray(users) || !user) {
+      return [];
+    }
+    return users.filter((candidate) => candidate.id !== user.id);
+  }, [users, user]);
+
+  const assignCandidates = useMemo(() => {
+    if (!Array.isArray(users) || !user) {
+      return [];
+    }
+
+    const staff = users.filter((candidate) => candidate.role === "STAFF");
+    if (user.role === "ADMIN") {
+      return staff;
+    }
+
+    return staff.filter((candidate) => candidate.departmentId && candidate.departmentId === user.departmentId);
+  }, [users, user]);
 
   const modalLabel =
     previewModal.type === "preview"
@@ -63,6 +97,18 @@ export default function PreviewModal({
               <span>Uploader</span>
               <strong>{previewModal.document?.uploadedBy?.name}</strong>
             </div>
+            <div>
+              <span>Status</span>
+              <strong>{previewModal.document?.workflowStatus || "-"}</strong>
+            </div>
+            <div>
+              <span>Approval</span>
+              <strong>{previewModal.document?.approvalStatus || "-"}</strong>
+            </div>
+            <div>
+              <span>Assigned</span>
+              <strong>{previewModal.document?.assignedTo?.name || "-"}</strong>
+            </div>
           </div>
         ) : null}
 
@@ -85,7 +131,103 @@ export default function PreviewModal({
                 <span>Share</span>
                 <strong>{documentShares.length} kali</strong>
               </div>
+              <div>
+                <span>Status</span>
+                <strong>{previewModal.document?.workflowStatus || "-"}</strong>
+              </div>
+              <div>
+                <span>Approval</span>
+                <strong>{previewModal.document?.approvalStatus || "-"}</strong>
+              </div>
+              <div>
+                <span>Assigned</span>
+                <strong>{previewModal.document?.assignedTo?.name || "-"}</strong>
+              </div>
             </div>
+
+            <section className="subpanel saas-subpanel">
+              <h4>Workflow</h4>
+              <div className="form-inline compact-form">
+                {isManagerLike ? (
+                  <>
+                    <select
+                      value={assignToId}
+                      onChange={(e) => setAssignToId(e.target.value)}
+                    >
+                      <option value="">Assign ke staff</option>
+                      {assignCandidates.map((candidate) => (
+                        <option key={candidate.id} value={candidate.id}>
+                          {candidate.name}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => assignDocument(document.id, assignToId)}
+                      disabled={!assignCandidates.length}
+                    >
+                      Assign
+                    </button>
+                  </>
+                ) : null}
+
+                <select
+                  value={statusDraft}
+                  onChange={(e) => setStatusDraft(e.target.value)}
+                  disabled={
+                    user?.role === "STAFF" &&
+                    document?.assignedToId &&
+                    document.assignedToId !== user.id
+                  }
+                >
+                  <option value="">Ubah status</option>
+                  {user?.role === "STAFF" ? (
+                    <>
+                      <option value="IN_PROGRESS">IN_PROGRESS</option>
+                      <option value="DONE">DONE</option>
+                    </>
+                  ) : (
+                    <>
+                      <option value="CREATED">CREATED</option>
+                      <option value="ASSIGNED">ASSIGNED</option>
+                      <option value="IN_PROGRESS">IN_PROGRESS</option>
+                      <option value="DONE">DONE</option>
+                    </>
+                  )}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => updateWorkflowStatus(document.id, statusDraft)}
+                  disabled={!statusDraft}
+                >
+                  Simpan
+                </button>
+              </div>
+
+              {isManagerLike ? (
+                <div className="form-inline compact-form" style={{ marginTop: 12 }}>
+                  <input
+                    placeholder="Catatan approval (opsional)"
+                    value={decisionNote}
+                    onChange={(e) => setDecisionNote(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    className="ghost-btn"
+                    onClick={() => decideDocument(document.id, "APPROVED", decisionNote)}
+                  >
+                    Approve
+                  </button>
+                  <button
+                    type="button"
+                    className="ghost-btn"
+                    onClick={() => decideDocument(document.id, "REJECTED", decisionNote)}
+                  >
+                    Reject
+                  </button>
+                </div>
+              ) : null}
+            </section>
 
             <section className="subpanel saas-subpanel">
               <h4>Tambah versi baru</h4>
@@ -105,48 +247,48 @@ export default function PreviewModal({
               </div>
             </section>
 
-            <section className="subpanel saas-subpanel">
-              <h4>Share ke user</h4>
-              <div className="form-inline share-form">
-                <select
-                  value={shareDrafts[previewModal.document.id]?.sharedToId || ""}
-                  onChange={(e) =>
-                    setShareDrafts((current) => ({
-                      ...current,
-                      [previewModal.document.id]: {
-                        ...(current[previewModal.document.id] || {}),
-                        sharedToId: e.target.value,
-                      },
-                    }))
-                  }
-                >
-                  <option value="">Pilih user</option>
-                  {users
-                    .filter((candidate) => candidate.id !== user.id)
-                    .map((candidate) => (
+            {shareCandidates.length ? (
+              <section className="subpanel saas-subpanel">
+                <h4>Share ke user</h4>
+                <div className="form-inline share-form">
+                  <select
+                    value={shareDrafts[previewModal.document.id]?.sharedToId || ""}
+                    onChange={(e) =>
+                      setShareDrafts((current) => ({
+                        ...current,
+                        [previewModal.document.id]: {
+                          ...(current[previewModal.document.id] || {}),
+                          sharedToId: e.target.value,
+                        },
+                      }))
+                    }
+                  >
+                    <option value="">Pilih user</option>
+                    {shareCandidates.map((candidate) => (
                       <option key={candidate.id} value={candidate.id}>
                         {candidate.name} • {candidate.role}
                       </option>
                     ))}
-                </select>
-                <input
-                  placeholder="Pesan share"
-                  value={shareDrafts[previewModal.document.id]?.message || ""}
-                  onChange={(e) =>
-                    setShareDrafts((current) => ({
-                      ...current,
-                      [previewModal.document.id]: {
-                        ...(current[previewModal.document.id] || {}),
-                        message: e.target.value,
-                      },
-                    }))
-                  }
-                />
-                <button type="button" onClick={() => shareDocument(previewModal.document.id)}>
-                  Share
-                </button>
-              </div>
-            </section>
+                  </select>
+                  <input
+                    placeholder="Pesan share"
+                    value={shareDrafts[previewModal.document.id]?.message || ""}
+                    onChange={(e) =>
+                      setShareDrafts((current) => ({
+                        ...current,
+                        [previewModal.document.id]: {
+                          ...(current[previewModal.document.id] || {}),
+                          message: e.target.value,
+                        },
+                      }))
+                    }
+                  />
+                  <button type="button" onClick={() => shareDocument(previewModal.document.id)}>
+                    Share
+                  </button>
+                </div>
+              </section>
+            ) : null}
 
             <section className="subpanel timeline-box saas-subpanel">
               <h4>Riwayat versi</h4>
@@ -175,6 +317,41 @@ export default function PreviewModal({
                     </small>
                   </div>
                 ))}
+              </div>
+            </section>
+
+            <section className="subpanel timeline-box saas-subpanel">
+              <h4>Komentar</h4>
+              <div className="form-inline compact-form" style={{ marginBottom: 12 }}>
+                <input
+                  placeholder="Tulis komentar"
+                  value={commentText}
+                  onChange={(e) => setCommentText(e.target.value)}
+                />
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await addComment(document.id, commentText);
+                    setCommentText("");
+                  }}
+                >
+                  Kirim
+                </button>
+              </div>
+              <div className="timeline-list">
+                {documentComments?.length ? (
+                  documentComments.map((comment) => (
+                    <div key={comment.id} className="timeline-item">
+                      <strong>{comment.author?.name}</strong>
+                      <span>{comment.message}</span>
+                      <small>{dayjs(comment.createdAt).format("DD MMM YYYY HH:mm")}</small>
+                    </div>
+                  ))
+                ) : (
+                  <div className="timeline-item">
+                    <span>Belum ada komentar</span>
+                  </div>
+                )}
               </div>
             </section>
           </div>

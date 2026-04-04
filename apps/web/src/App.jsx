@@ -82,6 +82,7 @@ function App() {
   const [shareDrafts, setShareDrafts] = useState({});
   const [documentVersions, setDocumentVersions] = useState([]);
   const [documentShares, setDocumentShares] = useState([]);
+  const [documentComments, setDocumentComments] = useState([]);
   const [activeSection, setActiveSection] = useState("home");
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -94,6 +95,8 @@ function App() {
 
   const headers = useMemo(() => ({ Authorization: `Bearer ${token}` }), [token]);
   const isManagerLike = user?.role === "ADMIN" || user?.role === "MANAGER";
+  const canManageCategories = user?.role === "ADMIN";
+  const canCreateDocuments = isManagerLike;
 
   const unreadNotifications = notifications.filter((item) => !item.isRead).length;
   const recentDocuments = dashboard.recentDocuments || [];
@@ -359,15 +362,92 @@ function App() {
     const activeDocument = resolveDocument(doc);
 
     try {
-      const [versionsRes, sharesRes] = await Promise.all([
+      const [versionsRes, sharesRes, commentsRes] = await Promise.all([
         api.get(`/documents/${activeDocument.id}/versions`, { headers }),
         api.get(`/documents/${activeDocument.id}/shares`, { headers }),
+        api.get(`/documents/${activeDocument.id}/comments`, { headers }),
       ]);
       setDocumentVersions(versionsRes.data);
       setDocumentShares(sharesRes.data);
+      setDocumentComments(commentsRes.data);
       setPreviewModal({ type: "versions", document: activeDocument, blobUrl: "" });
     } catch (requestError) {
       showToast(requestError.response?.data?.message || "Gagal memuat versi dokumen.", "error");
+    }
+  }
+
+  async function addComment(docId, message) {
+    if (!message?.trim()) {
+      showToast("Komentar tidak boleh kosong.", "error");
+      return;
+    }
+
+    try {
+      await api.post(
+        `/documents/${docId}/comments`,
+        { message: message.trim() },
+        { headers },
+      );
+      showToast("Komentar ditambahkan.");
+      await loadData();
+      await openVersions(docId);
+    } catch (requestError) {
+      showToast(requestError.response?.data?.message || "Gagal menambah komentar.", "error");
+    }
+  }
+
+  async function assignDocument(docId, assignedToId) {
+    if (!assignedToId) {
+      showToast("Pilih staff terlebih dahulu.", "error");
+      return;
+    }
+
+    try {
+      await api.patch(
+        `/documents/${docId}/assign`,
+        { assignedToId: Number(assignedToId) },
+        { headers },
+      );
+      showToast("Dokumen berhasil di-assign.");
+      await loadData();
+      await openVersions(docId);
+    } catch (requestError) {
+      showToast(requestError.response?.data?.message || "Gagal assign dokumen.", "error");
+    }
+  }
+
+  async function updateWorkflowStatus(docId, workflowStatus) {
+    if (!workflowStatus) {
+      showToast("Pilih status terlebih dahulu.", "error");
+      return;
+    }
+
+    try {
+      await api.patch(
+        `/documents/${docId}/status`,
+        { workflowStatus },
+        { headers },
+      );
+      showToast("Status diperbarui.");
+      await loadData();
+      await openVersions(docId);
+    } catch (requestError) {
+      showToast(requestError.response?.data?.message || "Gagal update status.", "error");
+    }
+  }
+
+  async function decideDocument(docId, approvalStatus, note) {
+    try {
+      await api.post(
+        `/documents/${docId}/decision`,
+        { approvalStatus, ...(note ? { note } : {}) },
+        { headers },
+      );
+      showToast("Keputusan tersimpan.");
+      await loadData();
+      await openVersions(docId);
+    } catch (requestError) {
+      showToast(requestError.response?.data?.message || "Gagal menyimpan keputusan.", "error");
     }
   }
 
@@ -459,6 +539,7 @@ function App() {
     setPreviewModal(emptyDocumentModal);
     setDocumentVersions([]);
     setDocumentShares([]);
+    setDocumentComments([]);
   };
 
   if (!token || !user) {
@@ -512,6 +593,8 @@ function App() {
         {activeSection === "documents" ? (
           <DocumentsSection
             isManagerLike={isManagerLike}
+            canCreateDocuments={canCreateDocuments}
+            canManageCategories={canManageCategories}
             uploadForm={uploadForm}
             setUploadForm={setUploadForm}
             handleUpload={handleUpload}
@@ -563,6 +646,7 @@ function App() {
           closeModal={closeModal}
           documentShares={documentShares}
           documentVersions={documentVersions}
+          documentComments={documentComments}
           versionDrafts={versionDrafts}
           setVersionDrafts={setVersionDrafts}
           uploadVersion={uploadVersion}
@@ -571,6 +655,10 @@ function App() {
           users={users}
           user={user}
           shareDocument={shareDocument}
+          addComment={addComment}
+          assignDocument={assignDocument}
+          updateWorkflowStatus={updateWorkflowStatus}
+          decideDocument={decideDocument}
         />
 
         <ToastContainer toasts={toasts} />
