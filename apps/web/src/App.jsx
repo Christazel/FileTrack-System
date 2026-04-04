@@ -12,6 +12,33 @@ import OnboardingOverlay from "./components/ui/OnboardingOverlay";
 
 const api = axios.create({ baseURL: "/api" });
 
+function readStoredValue(key) {
+  return localStorage.getItem(key) || sessionStorage.getItem(key) || "";
+}
+
+function writeStoredValue(key, value) {
+  localStorage.setItem(key, value);
+  sessionStorage.setItem(key, value);
+}
+
+function removeStoredValue(key) {
+  localStorage.removeItem(key);
+  sessionStorage.removeItem(key);
+}
+
+function readStoredJson(key) {
+  const raw = localStorage.getItem(key) || sessionStorage.getItem(key);
+  if (!raw) {
+    return null;
+  }
+  try {
+    return JSON.parse(raw);
+  } catch {
+    removeStoredValue(key);
+    return null;
+  }
+}
+
 const emptyDocumentModal = {
   type: null,
   document: null,
@@ -51,19 +78,8 @@ const publicWorkflow = [
 ];
 
 function App() {
-  const [token, setToken] = useState(localStorage.getItem("filetrack_token") || "");
-  const [user, setUser] = useState(() => {
-    const raw = localStorage.getItem("filetrack_user");
-    if (!raw) {
-      return null;
-    }
-    try {
-      return JSON.parse(raw);
-    } catch {
-      localStorage.removeItem("filetrack_user");
-      return null;
-    }
-  });
+  const [token, setToken] = useState(readStoredValue("filetrack_token"));
+  const [user, setUser] = useState(() => readStoredJson("filetrack_user"));
   const [restoringSession, setRestoringSession] = useState(false);
   const [email, setEmail] = useState("admin@filetrack.local");
   const [password, setPassword] = useState("Password123!");
@@ -144,7 +160,7 @@ function App() {
           return;
         }
         setUser(response.data);
-        localStorage.setItem("filetrack_user", JSON.stringify(response.data));
+        writeStoredValue("filetrack_user", JSON.stringify(response.data));
       } catch (requestError) {
         if (cancelled) {
           return;
@@ -152,8 +168,8 @@ function App() {
 
         const status = requestError.response?.status;
         if (status === 401 || status === 403) {
-          localStorage.removeItem("filetrack_token");
-          localStorage.removeItem("filetrack_user");
+          removeStoredValue("filetrack_token");
+          removeStoredValue("filetrack_user");
           setToken("");
           setUser(null);
           showToast("Sesi login berakhir. Silakan login ulang.", "error");
@@ -262,8 +278,8 @@ function App() {
       const nextToken = response.data.token;
       const nextUser = response.data.user;
 
-      localStorage.setItem("filetrack_token", nextToken);
-      localStorage.setItem("filetrack_user", JSON.stringify(nextUser));
+      writeStoredValue("filetrack_token", nextToken);
+      writeStoredValue("filetrack_user", JSON.stringify(nextUser));
 
       setToken(nextToken);
       setUser(nextUser);
@@ -274,8 +290,8 @@ function App() {
   }
 
   function logout() {
-    localStorage.removeItem("filetrack_token");
-    localStorage.removeItem("filetrack_user");
+    removeStoredValue("filetrack_token");
+    removeStoredValue("filetrack_user");
     setToken("");
     setUser(null);
     setDocuments([]);
