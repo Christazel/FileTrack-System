@@ -54,8 +54,17 @@ function App() {
   const [token, setToken] = useState(localStorage.getItem("filetrack_token") || "");
   const [user, setUser] = useState(() => {
     const raw = localStorage.getItem("filetrack_user");
-    return raw ? JSON.parse(raw) : null;
+    if (!raw) {
+      return null;
+    }
+    try {
+      return JSON.parse(raw);
+    } catch {
+      localStorage.removeItem("filetrack_user");
+      return null;
+    }
   });
+  const [restoringSession, setRestoringSession] = useState(false);
   const [email, setEmail] = useState("admin@filetrack.local");
   const [password, setPassword] = useState("Password123!");
   const [error, setError] = useState("");
@@ -112,6 +121,59 @@ function App() {
       setToasts((prev) => prev.filter((t) => t.id !== toastId));
     }, 3000);
   }, []);
+
+  useEffect(() => {
+    if (!token) {
+      setRestoringSession(false);
+      return;
+    }
+
+    if (user) {
+      setRestoringSession(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    async function restore() {
+      setRestoringSession(true);
+      try {
+        const authHeaders = { Authorization: `Bearer ${token}` };
+        const response = await api.get("/auth/me", { headers: authHeaders });
+        if (cancelled) {
+          return;
+        }
+        setUser(response.data);
+        localStorage.setItem("filetrack_user", JSON.stringify(response.data));
+      } catch (requestError) {
+        if (cancelled) {
+          return;
+        }
+
+        const status = requestError.response?.status;
+        if (status === 401 || status === 403) {
+          localStorage.removeItem("filetrack_token");
+          localStorage.removeItem("filetrack_user");
+          setToken("");
+          setUser(null);
+          showToast("Sesi login berakhir. Silakan login ulang.", "error");
+          return;
+        }
+
+        showToast("Gagal memulihkan sesi. Silakan refresh atau login ulang.", "error");
+      } finally {
+        if (!cancelled) {
+          setRestoringSession(false);
+        }
+      }
+    }
+
+    restore();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [token, user, showToast]);
 
   useEffect(() => {
     if (!success) {
@@ -657,7 +719,7 @@ function App() {
     setDocumentLogs([]);
   };
 
-  if (!token || !user) {
+  if (!token) {
     return (
       <LoginPage
         publicProofPoints={publicProofPoints}
@@ -671,6 +733,14 @@ function App() {
         error={error}
         success={success}
       />
+    );
+  }
+
+  if (!user) {
+    return (
+      <main className="app-shell" style={{ display: "grid", placeItems: "center", minHeight: "100vh" }}>
+        <p className="status-note">{restoringSession ? "Memulihkan sesi..." : "Memuat profil..."}</p>
+      </main>
     );
   }
 
