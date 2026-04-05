@@ -1,6 +1,12 @@
 # FileTrack System
 
-FileTrack System adalah web aplikasi untuk menyimpan, mengelola, dan mencari dokumen perusahaan secara digital.
+FileTrack System adalah aplikasi web untuk menyimpan, mengelola, dan melacak dokumen perusahaan secara digital.
+
+Repo ini berbentuk monorepo fullstack:
+
+- `apps/web`: Frontend (React + Vite)
+- `apps/api`: Backend API (Express + Prisma)
+- Database lokal: MySQL via Docker (`docker-compose.yml`)
 
 ## Fitur Utama
 
