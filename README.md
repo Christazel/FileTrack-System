@@ -31,11 +31,13 @@ FileTrack System adalah web aplikasi untuk menyimpan, mengelola, dan mencari dok
 - `apps/api` -> Backend API
 - `docker-compose.yml` -> MySQL local
 
+> Tips: Workspace sudah disiapkan `.vscode/settings.json` untuk menyembunyikan folder berat seperti `node_modules`, `dist`, dan `uploads` agar Explorer/Search lebih rapi.
+
 ## Menjalankan Project
 
 1. Jalankan MySQL:
    ```bash
-   docker compose up -d
+   npm run db:up
    ```
 2. Setup backend:
    ```bash
@@ -57,6 +59,13 @@ FileTrack System adalah web aplikasi untuk menyimpan, mengelola, dan mencari dok
    npm install
    npm run dev
    ```
+
+### Script cepat (root)
+
+- `npm run dev` -> API + Web barengan
+- `npm run dev:api` / `npm run dev:web`
+- `npm run db:up` / `npm run db:down` / `npm run db:logs`
+- `npm run prisma:migrate` / `npm run prisma:generate` / `npm run prisma:studio`
 
 Frontend: `http://localhost:5173`
 Backend: `http://localhost:4000`
