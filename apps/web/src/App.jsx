@@ -9,59 +9,20 @@ import NotificationsSection from "./components/sections/NotificationsSection";
 import PreviewModal from "./components/modals/PreviewModal";
 import ToastContainer from "./components/ui/ToastContainer";
 import OnboardingOverlay from "./components/ui/OnboardingOverlay";
+import {
+  TOAST_TIMEOUT_MS,
+  defaultDashboard,
+  emptyDocumentModal,
+  getApiErrorMessage,
+  publicFeatures,
+  publicProofPoints,
+  publicWorkflow,
+} from "./appDefaults";
 
 const api = axios.create({ baseURL: "/api" });
 
-const emptyDocumentModal = {
-  type: null,
-  document: null,
-  blobUrl: "",
-};
-
-const defaultDashboard = {
-  totalDocuments: 0,
-  totalUsers: 0,
-  recentDocuments: [],
-  uploadStats: [],
-};
-
-const TOAST_TIMEOUT_MS = 3000;
-
-function getApiErrorMessage(error, fallbackMessage) {
-  return error?.response?.data?.message || fallbackMessage;
-}
-
-const publicFeatures = [
-  {
-    title: "RBAC Aman",
-    description: "Role admin, manager, dan staff dengan hak akses berbeda untuk setiap aksi penting.",
-  },
-  {
-    title: "Search Cepat",
-    description: "Cari berdasarkan nama, kategori, tanggal, atau tag dalam satu tampilan yang ringkas.",
-  },
-  {
-    title: "Preview & Versioning",
-    description: "Buka PDF langsung dari browser dan simpan revisi dokumen tanpa kehilangan histori.",
-  },
-  {
-    title: "Share & Notifikasi",
-    description: "Bagikan file ke user lain dan pantau semua aktivitas penting secara real time.",
-  },
-];
-
-const publicProofPoints = [
-  { label: "Upload maksimal", value: "10 MB" },
-  { label: "Format didukung", value: "PDF, DOCX, XLSX" },
-  { label: "Mode akses", value: "JWT + RBAC" },
-];
-
-const publicWorkflow = [
-  "Login sesuai role",
-  "Upload dan kategorikan dokumen",
-  "Preview, share, dan revisi file",
-  "Pantau log dan notifikasi",
-];
+const DEFAULT_SORT_BY = "createdAt";
+const DEFAULT_SORT_ORDER = "desc";
 
 function App() {
   const [token, setToken] = useState("");
@@ -99,8 +60,8 @@ function App() {
 
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(10);
-  const [sortBy, _setSortBy] = useState("createdAt");
-  const [sortOrder, _setSortOrder] = useState("desc");
+  const sortBy = DEFAULT_SORT_BY;
+  const sortOrder = DEFAULT_SORT_ORDER;
 
   const [toasts, setToasts] = useState([]);
   const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem("filetrack_onboarding_seen"));
