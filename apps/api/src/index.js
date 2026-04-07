@@ -16,26 +16,28 @@ const notificationRoutes = require("./routes/notifications");
 const departmentRoutes = require("./routes/departments");
 
 const app = express();
+const API_PREFIX = "/api";
+const uploadsPath = path.resolve(__dirname, "../uploads");
 
 app.use(helmet());
 app.use(cors({ origin: process.env.CORS_ORIGIN || "http://localhost:5173" }));
 app.use(express.json());
 app.use(morgan("dev"));
 
-app.use("/uploads", express.static(path.resolve(__dirname, "../uploads")));
+app.use("/uploads", express.static(uploadsPath));
 
-app.get("/api/health", (_req, res) => {
+app.get(`${API_PREFIX}/health`, (_req, res) => {
   res.json({ status: "ok", service: "FileTrack API" });
 });
 
-app.use("/api/auth", authRoutes);
-app.use("/api/categories", categoryRoutes);
-app.use("/api/documents", documentRoutes);
-app.use("/api/dashboard", dashboardRoutes);
-app.use("/api/logs", logsRoutes);
-app.use("/api/users", userRoutes);
-app.use("/api/notifications", notificationRoutes);
-app.use("/api/departments", departmentRoutes);
+app.use(`${API_PREFIX}/auth`, authRoutes);
+app.use(`${API_PREFIX}/categories`, categoryRoutes);
+app.use(`${API_PREFIX}/documents`, documentRoutes);
+app.use(`${API_PREFIX}/dashboard`, dashboardRoutes);
+app.use(`${API_PREFIX}/logs`, logsRoutes);
+app.use(`${API_PREFIX}/users`, userRoutes);
+app.use(`${API_PREFIX}/notifications`, notificationRoutes);
+app.use(`${API_PREFIX}/departments`, departmentRoutes);
 
 app.use((error, _req, res, _next) => {
   if (error && error.message === "Tipe file tidak diizinkan.") {

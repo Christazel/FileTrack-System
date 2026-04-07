@@ -18,6 +18,19 @@ const emptyDocumentModal = {
   blobUrl: "",
 };
 
+const defaultDashboard = {
+  totalDocuments: 0,
+  totalUsers: 0,
+  recentDocuments: [],
+  uploadStats: [],
+};
+
+const TOAST_TIMEOUT_MS = 3000;
+
+function getApiErrorMessage(error, fallbackMessage) {
+  return error?.response?.data?.message || fallbackMessage;
+}
+
 const publicFeatures = [
   {
     title: "RBAC Aman",
@@ -59,7 +72,7 @@ function App() {
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const [dashboard, setDashboard] = useState({ totalDocuments: 0, totalUsers: 0, recentDocuments: [], uploadStats: [] });
+  const [dashboard, setDashboard] = useState(defaultDashboard);
   const [categories, setCategories] = useState([]);
   const [documents, setDocuments] = useState([]);
   const [logs, setLogs] = useState([]);
@@ -107,7 +120,7 @@ function App() {
     setToasts((prev) => [...prev, newToast]);
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== toastId));
-    }, 3000);
+    }, TOAST_TIMEOUT_MS);
   }, []);
 
   useEffect(() => {
@@ -172,7 +185,7 @@ function App() {
         setNotifications(notificationsRes.data);
         setLogs(logsRes?.data?.items || []);
       } catch (requestError) {
-        showToast(requestError.response?.data?.message || "Gagal mengambil data.", "error");
+        showToast(getApiErrorMessage(requestError, "Gagal mengambil data."), "error");
       } finally {
         setLoading(false);
       }
@@ -208,7 +221,7 @@ function App() {
       setUser(nextUser);
       showToast("Login berhasil.");
     } catch (requestError) {
-      showToast(requestError.response?.data?.message || "Login gagal.", "error");
+      showToast(getApiErrorMessage(requestError, "Login gagal."), "error");
     }
   }
 
@@ -217,7 +230,7 @@ function App() {
     setUser(null);
     setDocuments([]);
     setNotifications([]);
-    setDashboard({ totalDocuments: 0, totalUsers: 0, recentDocuments: [], uploadStats: [] });
+    setDashboard(defaultDashboard);
     setLogs([]);
     setDepartments([]);
     setPreviewModal(emptyDocumentModal);
@@ -239,7 +252,7 @@ function App() {
       showToast("User berhasil dibuat.");
       await loadData(token);
     } catch (requestError) {
-      showToast(requestError.response?.data?.message || "Gagal membuat user.", "error");
+      showToast(getApiErrorMessage(requestError, "Gagal membuat user."), "error");
     }
   }
 
@@ -258,7 +271,7 @@ function App() {
       showToast("User diperbarui.");
       await loadData(token);
     } catch (requestError) {
-      showToast(requestError.response?.data?.message || "Gagal update user.", "error");
+      showToast(getApiErrorMessage(requestError, "Gagal update user."), "error");
     }
   }
 
@@ -267,7 +280,7 @@ function App() {
       await api.post(`/users/${userId}/reset-password`, {}, { headers });
       showToast("Password direset ke default (atau sesuai input backend).");
     } catch (requestError) {
-      showToast(requestError.response?.data?.message || "Gagal reset password.", "error");
+      showToast(getApiErrorMessage(requestError, "Gagal reset password."), "error");
     }
   }
 
@@ -277,7 +290,7 @@ function App() {
       showToast("User dihapus.");
       await loadData(token);
     } catch (requestError) {
-      showToast(requestError.response?.data?.message || "Gagal menghapus user.", "error");
+      showToast(getApiErrorMessage(requestError, "Gagal menghapus user."), "error");
     }
   }
 
@@ -291,7 +304,7 @@ function App() {
       showToast("Departemen berhasil dibuat.");
       await loadData(token);
     } catch (requestError) {
-      showToast(requestError.response?.data?.message || "Gagal membuat departemen.", "error");
+      showToast(getApiErrorMessage(requestError, "Gagal membuat departemen."), "error");
     }
   }
 
@@ -305,7 +318,7 @@ function App() {
       showToast("Departemen diperbarui.");
       await loadData(token);
     } catch (requestError) {
-      showToast(requestError.response?.data?.message || "Gagal update departemen.", "error");
+      showToast(getApiErrorMessage(requestError, "Gagal update departemen."), "error");
     }
   }
 
@@ -315,7 +328,7 @@ function App() {
       showToast("Departemen dihapus.");
       await loadData(token);
     } catch (requestError) {
-      showToast(requestError.response?.data?.message || "Gagal menghapus departemen.", "error");
+      showToast(getApiErrorMessage(requestError, "Gagal menghapus departemen."), "error");
     }
   }
 
@@ -365,7 +378,7 @@ function App() {
       const response = await api.get("/documents", { headers, params });
       setDocuments(response.data);
     } catch (requestError) {
-      showToast(requestError.response?.data?.message || "Pencarian gagal.", "error");
+      showToast(getApiErrorMessage(requestError, "Pencarian gagal."), "error");
     }
   }
 
@@ -389,7 +402,7 @@ function App() {
       showToast("Dokumen berhasil diunggah.");
       await loadData(token);
     } catch (requestError) {
-      showToast(requestError.response?.data?.message || "Upload gagal.", "error");
+      showToast(getApiErrorMessage(requestError, "Upload gagal."), "error");
     }
   }
 
@@ -405,7 +418,7 @@ function App() {
       showToast("Kategori berhasil ditambahkan.");
       await loadData(token);
     } catch (requestError) {
-      showToast(requestError.response?.data?.message || "Gagal membuat kategori.", "error");
+      showToast(getApiErrorMessage(requestError, "Gagal membuat kategori."), "error");
     }
   }
 
@@ -415,7 +428,7 @@ function App() {
       showToast("Kategori diperbarui.");
       await loadData(token);
     } catch (requestError) {
-      showToast(requestError.response?.data?.message || "Gagal update kategori.", "error");
+      showToast(getApiErrorMessage(requestError, "Gagal update kategori."), "error");
     }
   }
 
@@ -425,7 +438,7 @@ function App() {
       showToast("Kategori dihapus.");
       await loadData(token);
     } catch (requestError) {
-      showToast(requestError.response?.data?.message || "Gagal menghapus kategori.", "error");
+      showToast(getApiErrorMessage(requestError, "Gagal menghapus kategori."), "error");
     }
   }
 
@@ -446,7 +459,7 @@ function App() {
       showToast("Download berhasil.");
       await loadData(token);
     } catch (requestError) {
-      showToast(requestError.response?.data?.message || "Gagal download dokumen.", "error");
+      showToast(getApiErrorMessage(requestError, "Gagal download dokumen."), "error");
     }
   }
 
@@ -468,7 +481,7 @@ function App() {
       const blobUrl = URL.createObjectURL(new Blob([response.data], { type: "application/pdf" }));
       setPreviewModal({ type: "preview", document: doc, blobUrl });
     } catch (requestError) {
-      showToast(requestError.response?.data?.message || "Gagal memuat preview.", "error");
+      showToast(getApiErrorMessage(requestError, "Gagal memuat preview."), "error");
     }
   }
 
@@ -485,7 +498,7 @@ function App() {
       setDocumentLogs(tracked.logs || []);
       setPreviewModal({ type: "versions", document: tracked, blobUrl: "" });
     } catch (requestError) {
-      showToast(requestError.response?.data?.message || "Gagal memuat versi dokumen.", "error");
+      showToast(getApiErrorMessage(requestError, "Gagal memuat versi dokumen."), "error");
     }
   }
 
@@ -505,7 +518,7 @@ function App() {
       await loadData(token);
       await openVersions(docId);
     } catch (requestError) {
-      showToast(requestError.response?.data?.message || "Gagal menambah komentar.", "error");
+      showToast(getApiErrorMessage(requestError, "Gagal menambah komentar."), "error");
     }
   }
 
@@ -525,7 +538,7 @@ function App() {
       await loadData(token);
       await openVersions(docId);
     } catch (requestError) {
-      showToast(requestError.response?.data?.message || "Gagal assign dokumen.", "error");
+      showToast(getApiErrorMessage(requestError, "Gagal assign dokumen."), "error");
     }
   }
 
@@ -545,7 +558,7 @@ function App() {
       await loadData(token);
       await openVersions(docId);
     } catch (requestError) {
-      showToast(requestError.response?.data?.message || "Gagal update status.", "error");
+      showToast(getApiErrorMessage(requestError, "Gagal update status."), "error");
     }
   }
 
@@ -560,7 +573,7 @@ function App() {
       await loadData(token);
       await openVersions(docId);
     } catch (requestError) {
-      showToast(requestError.response?.data?.message || "Gagal menyimpan keputusan.", "error");
+      showToast(getApiErrorMessage(requestError, "Gagal menyimpan keputusan."), "error");
     }
   }
 
@@ -586,7 +599,7 @@ function App() {
       await loadData(token);
       await openVersions(docId);
     } catch (requestError) {
-      showToast(requestError.response?.data?.message || "Gagal menambah versi.", "error");
+      showToast(getApiErrorMessage(requestError, "Gagal menambah versi."), "error");
     }
   }
 
@@ -611,7 +624,7 @@ function App() {
       await loadData(token);
       await openVersions(docId);
     } catch (requestError) {
-      showToast(requestError.response?.data?.message || "Gagal membagikan dokumen.", "error");
+      showToast(getApiErrorMessage(requestError, "Gagal membagikan dokumen."), "error");
     }
   }
 
@@ -620,7 +633,7 @@ function App() {
       await api.patch(`/notifications/${notificationId}/read`, {}, { headers });
       await loadData(token);
     } catch (requestError) {
-      showToast(requestError.response?.data?.message || "Gagal memperbarui notifikasi.", "error");
+      showToast(getApiErrorMessage(requestError, "Gagal memperbarui notifikasi."), "error");
     }
   }
 
@@ -629,7 +642,7 @@ function App() {
       await api.patch("/notifications/read-all", {}, { headers });
       await loadData(token);
     } catch (requestError) {
-      showToast(requestError.response?.data?.message || "Gagal menandai notifikasi.", "error");
+      showToast(getApiErrorMessage(requestError, "Gagal menandai notifikasi."), "error");
     }
   }
 
