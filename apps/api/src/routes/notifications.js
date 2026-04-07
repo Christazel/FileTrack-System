@@ -17,6 +17,15 @@ router.get("/", authRequired, async (req, res) => {
   return res.json(notifications);
 });
 
+router.patch("/read-all", authRequired, async (req, res) => {
+  await prisma.notification.updateMany({
+    where: { userId: req.user.id, isRead: false },
+    data: { isRead: true },
+  });
+
+  return res.json({ message: "Semua notifikasi ditandai sudah dibaca." });
+});
+
 router.patch("/:id/read", authRequired, async (req, res) => {
   const id = Number(req.params.id);
   const notification = await prisma.notification.findFirst({
@@ -33,15 +42,6 @@ router.patch("/:id/read", authRequired, async (req, res) => {
   });
 
   return res.json(updated);
-});
-
-router.patch("/read-all", authRequired, async (req, res) => {
-  await prisma.notification.updateMany({
-    where: { userId: req.user.id, isRead: false },
-    data: { isRead: true },
-  });
-
-  return res.json({ message: "Semua notifikasi ditandai sudah dibaca." });
 });
 
 module.exports = router;

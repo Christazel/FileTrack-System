@@ -1,4 +1,5 @@
 const express = require("express");
+const fs = require("fs");
 const path = require("path");
 const { z } = require("zod");
 
@@ -18,11 +19,28 @@ const metadataSchema = z.object({
   departmentId: z.coerce.number().int().positive().optional(),
 });
 
+function parseDateQuery(value) {
+  if (!value) {
+    return undefined;
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return null;
+  }
+
+  return parsed;
+}
+
 router.get("/", authRequired, async (req, res) => {
   const query = (req.query.q || "").toString().trim();
   const categoryId = req.query.categoryId ? Number(req.query.categoryId) : undefined;
-  const dateFrom = req.query.dateFrom ? new Date(req.query.dateFrom) : undefined;
-  const dateTo = req.query.dateTo ? new Date(req.query.dateTo) : undefined;
+  const dateFrom = parseDateQuery(req.query.dateFrom);
+  const dateTo = parseDateQuery(req.query.dateTo);
+
+  if (dateFrom === null || dateTo === null) {
+    return res.status(400).json({ message: "Format tanggal tidak valid." });
+  }
 
   const userScope = await getUserScope(req.user.id);
   const accessWhere = buildDocumentAccessWhere({ user: req.user, userScope });
@@ -187,7 +205,24 @@ router.get("/:id/download", authRequired, async (req, res) => {
   });
 
   const fileLocation = path.resolve(__dirname, "../../uploads", document.filePath);
-  return res.download(fileLocation, document.originalName);
+  if (!fs.existsSync(fileLocation)) {
+    return res.status(404).json({ message: "File dokumen tidak ditemukan di server." });
+  }
+
+  return res.download(fileLocation, document.originalName, (error) => {
+    if (!error) {
+      return;
+    }
+
+    if (res.headersSent) {
+      return;
+    }
+
+    const status = error.code === "ENOENT" ? 404 : 500;
+    return res.status(status).json({
+      message: status === 404 ? "File dokumen tidak ditemukan di server." : "Gagal download dokumen.",
+    });
+  });
 });
 
 router.get("/:id/preview", authRequired, async (req, res) => {
@@ -200,9 +235,26 @@ router.get("/:id/preview", authRequired, async (req, res) => {
   }
 
   const fileLocation = path.resolve(__dirname, "../../uploads", document.filePath);
+  if (!fs.existsSync(fileLocation)) {
+    return res.status(404).json({ message: "File dokumen tidak ditemukan di server." });
+  }
+
   res.setHeader("Content-Type", document.mimeType || "application/pdf");
   res.setHeader("Content-Disposition", `inline; filename="${document.originalName}"`);
-  return res.sendFile(fileLocation);
+  return res.sendFile(fileLocation, (error) => {
+    if (!error) {
+      return;
+    }
+
+    if (res.headersSent) {
+      return;
+    }
+
+    const status = error.code === "ENOENT" ? 404 : 500;
+    return res.status(status).json({
+      message: status === 404 ? "File dokumen tidak ditemukan di server." : "Gagal memuat preview dokumen.",
+    });
+  });
 });
 
 router.get("/:id/versions", authRequired, async (req, res) => {
