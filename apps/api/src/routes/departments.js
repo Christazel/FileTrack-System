@@ -6,6 +6,16 @@ const { authRequired, requireRoles } = require("../middleware/auth");
 
 const router = express.Router();
 
+function requirePositiveIntParam(req, res, paramName = "id") {
+  const rawValue = req.params?.[paramName];
+  const value = Number(rawValue);
+  if (!Number.isInteger(value) || value <= 0) {
+    res.status(400).json({ message: "ID tidak valid." });
+    return null;
+  }
+  return value;
+}
+
 router.get("/", authRequired, async (_req, res) => {
   const departments = await prisma.department.findMany({
     orderBy: { name: "asc" },
@@ -43,7 +53,10 @@ router.post("/", authRequired, requireRoles("ADMIN"), async (req, res) => {
 });
 
 router.patch("/:id", authRequired, requireRoles("ADMIN"), async (req, res) => {
-  const id = Number(req.params.id);
+  const id = requirePositiveIntParam(req, res);
+  if (!id) {
+    return;
+  }
   const schema = z.object({
     name: z.string().min(2).max(80),
   });
@@ -72,7 +85,10 @@ router.patch("/:id", authRequired, requireRoles("ADMIN"), async (req, res) => {
 });
 
 router.delete("/:id", authRequired, requireRoles("ADMIN"), async (req, res) => {
-  const id = Number(req.params.id);
+  const id = requirePositiveIntParam(req, res);
+  if (!id) {
+    return;
+  }
 
   try {
     await prisma.department.delete({ where: { id } });

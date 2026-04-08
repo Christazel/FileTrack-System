@@ -8,6 +8,16 @@ const { getUserScope, isAdmin, isManager } = require("../utils/access");
 
 const router = express.Router();
 
+function requirePositiveIntParam(req, res, paramName = "id") {
+  const rawValue = req.params?.[paramName];
+  const value = Number(rawValue);
+  if (!Number.isInteger(value) || value <= 0) {
+    res.status(400).json({ message: "ID tidak valid." });
+    return null;
+  }
+  return value;
+}
+
 router.get("/", authRequired, async (req, res) => {
   const userScope = await getUserScope(req.user.id);
 
@@ -89,7 +99,10 @@ router.post("/", authRequired, requireRoles("ADMIN"), async (req, res) => {
 });
 
 router.patch("/:id", authRequired, requireRoles("ADMIN"), async (req, res) => {
-  const id = Number(req.params.id);
+  const id = requirePositiveIntParam(req, res);
+  if (!id) {
+    return;
+  }
   const schema = z.object({
     name: z.string().min(2).max(80).optional(),
     email: z.string().email().optional(),
@@ -126,7 +139,10 @@ router.patch("/:id", authRequired, requireRoles("ADMIN"), async (req, res) => {
 });
 
 router.post("/:id/reset-password", authRequired, requireRoles("ADMIN"), async (req, res) => {
-  const id = Number(req.params.id);
+  const id = requirePositiveIntParam(req, res);
+  if (!id) {
+    return;
+  }
   const schema = z.object({
     password: z.string().min(6).optional(),
   });
@@ -151,7 +167,10 @@ router.post("/:id/reset-password", authRequired, requireRoles("ADMIN"), async (r
 });
 
 router.delete("/:id", authRequired, requireRoles("ADMIN"), async (req, res) => {
-  const id = Number(req.params.id);
+  const id = requirePositiveIntParam(req, res);
+  if (!id) {
+    return;
+  }
 
   if (id === req.user.id) {
     return res.status(400).json({ message: "Tidak bisa menghapus akun sendiri." });
