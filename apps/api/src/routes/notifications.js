@@ -5,6 +5,16 @@ const { authRequired } = require("../middleware/auth");
 
 const router = express.Router();
 
+function requirePositiveIntParam(req, res, paramName = "id") {
+  const rawValue = req.params?.[paramName];
+  const value = Number(rawValue);
+  if (!Number.isInteger(value) || value <= 0) {
+    res.status(400).json({ message: "ID tidak valid." });
+    return null;
+  }
+  return value;
+}
+
 router.get("/", authRequired, async (req, res) => {
   const notifications = await prisma.notification.findMany({
     where: { userId: req.user.id },
@@ -27,7 +37,10 @@ router.patch("/read-all", authRequired, async (req, res) => {
 });
 
 router.patch("/:id/read", authRequired, async (req, res) => {
-  const id = Number(req.params.id);
+  const id = requirePositiveIntParam(req, res);
+  if (!id) {
+    return;
+  }
   const notification = await prisma.notification.findFirst({
     where: { id, userId: req.user.id },
   });

@@ -19,6 +19,16 @@ const metadataSchema = z.object({
   departmentId: z.coerce.number().int().positive().optional(),
 });
 
+function requirePositiveIntParam(req, res, paramName = "id") {
+  const rawValue = req.params?.[paramName];
+  const value = Number(rawValue);
+  if (!Number.isInteger(value) || value <= 0) {
+    res.status(400).json({ message: "ID tidak valid." });
+    return null;
+  }
+  return value;
+}
+
 function parseDateQuery(value) {
   if (!value) {
     return undefined;
@@ -189,7 +199,10 @@ router.post(
 );
 
 router.get("/:id/download", authRequired, async (req, res) => {
-  const id = Number(req.params.id);
+  const id = requirePositiveIntParam(req, res);
+  if (!id) {
+    return;
+  }
   const userScope = await getUserScope(req.user.id);
   const document = await findDocumentWithAccess({ documentId: id, user: req.user, userScope });
 
@@ -226,7 +239,10 @@ router.get("/:id/download", authRequired, async (req, res) => {
 });
 
 router.get("/:id/preview", authRequired, async (req, res) => {
-  const id = Number(req.params.id);
+  const id = requirePositiveIntParam(req, res);
+  if (!id) {
+    return;
+  }
   const userScope = await getUserScope(req.user.id);
   const document = await findDocumentWithAccess({ documentId: id, user: req.user, userScope });
 
@@ -258,7 +274,10 @@ router.get("/:id/preview", authRequired, async (req, res) => {
 });
 
 router.get("/:id/versions", authRequired, async (req, res) => {
-  const id = Number(req.params.id);
+  const id = requirePositiveIntParam(req, res);
+  if (!id) {
+    return;
+  }
 
   const userScope = await getUserScope(req.user.id);
   const document = await findDocumentWithAccess({ documentId: id, user: req.user, userScope });
@@ -283,7 +302,10 @@ router.post(
   requireRoles("ADMIN", "STAFF", "MANAGER"),
   upload.single("file"),
   async (req, res) => {
-    const id = Number(req.params.id);
+    const id = requirePositiveIntParam(req, res);
+    if (!id) {
+      return;
+    }
 
     try {
       const userScope = await getUserScope(req.user.id);
@@ -362,7 +384,10 @@ router.post(
 );
 
 router.post("/:id/share", authRequired, requireRoles("ADMIN", "MANAGER"), async (req, res) => {
-  const id = Number(req.params.id);
+  const id = requirePositiveIntParam(req, res);
+  if (!id) {
+    return;
+  }
   const schema = z.object({
     sharedToId: z.coerce.number().int().positive(),
     message: z.string().max(250).optional(),
@@ -442,7 +467,10 @@ router.post("/:id/share", authRequired, requireRoles("ADMIN", "MANAGER"), async 
 });
 
 router.patch("/:id/assign", authRequired, requireRoles("ADMIN", "MANAGER"), async (req, res) => {
-  const id = Number(req.params.id);
+  const id = requirePositiveIntParam(req, res);
+  if (!id) {
+    return;
+  }
   const schema = z.object({
     assignedToId: z.coerce.number().int().positive(),
   });
@@ -531,7 +559,10 @@ router.patch("/:id/assign", authRequired, requireRoles("ADMIN", "MANAGER"), asyn
 });
 
 router.patch("/:id/status", authRequired, async (req, res) => {
-  const id = Number(req.params.id);
+  const id = requirePositiveIntParam(req, res);
+  if (!id) {
+    return;
+  }
   const schema = z.object({
     workflowStatus: z.enum(["CREATED", "ASSIGNED", "IN_PROGRESS", "DONE"]),
   });
@@ -598,7 +629,10 @@ router.patch("/:id/status", authRequired, async (req, res) => {
 });
 
 router.post("/:id/decision", authRequired, requireRoles("ADMIN", "MANAGER"), async (req, res) => {
-  const id = Number(req.params.id);
+  const id = requirePositiveIntParam(req, res);
+  if (!id) {
+    return;
+  }
   const schema = z.object({
     approvalStatus: z.enum(["APPROVED", "REJECTED"]),
     note: z.string().max(250).optional(),
@@ -673,7 +707,10 @@ router.post("/:id/decision", authRequired, requireRoles("ADMIN", "MANAGER"), asy
 });
 
 router.get("/:id/tracking", authRequired, async (req, res) => {
-  const id = Number(req.params.id);
+  const id = requirePositiveIntParam(req, res);
+  if (!id) {
+    return;
+  }
 
   const userScope = await getUserScope(req.user.id);
   const document = await findDocumentWithAccess({
@@ -723,7 +760,10 @@ router.get("/:id/tracking", authRequired, async (req, res) => {
 });
 
 router.get("/:id/comments", authRequired, async (req, res) => {
-  const id = Number(req.params.id);
+  const id = requirePositiveIntParam(req, res);
+  if (!id) {
+    return;
+  }
 
   const userScope = await getUserScope(req.user.id);
   const document = await findDocumentWithAccess({ documentId: id, user: req.user, userScope });
@@ -743,7 +783,10 @@ router.get("/:id/comments", authRequired, async (req, res) => {
 });
 
 router.post("/:id/comments", authRequired, async (req, res) => {
-  const id = Number(req.params.id);
+  const id = requirePositiveIntParam(req, res);
+  if (!id) {
+    return;
+  }
   const schema = z.object({
     message: z.string().min(1).max(1000),
   });
@@ -785,7 +828,10 @@ router.post("/:id/comments", authRequired, async (req, res) => {
 });
 
 router.put("/:id", authRequired, requireRoles("ADMIN", "MANAGER"), async (req, res) => {
-  const id = Number(req.params.id);
+  const id = requirePositiveIntParam(req, res);
+  if (!id) {
+    return;
+  }
   const schema = z.object({
     title: z.string().min(2).max(150).optional(),
     categoryId: z.coerce.number().int().positive().optional(),
@@ -839,7 +885,10 @@ router.put("/:id", authRequired, requireRoles("ADMIN", "MANAGER"), async (req, r
 });
 
 router.get("/:id/shares", authRequired, async (req, res) => {
-  const id = Number(req.params.id);
+  const id = requirePositiveIntParam(req, res);
+  if (!id) {
+    return;
+  }
 
   const userScope = await getUserScope(req.user.id);
   const document = await findDocumentWithAccess({ documentId: id, user: req.user, userScope });
@@ -860,7 +909,10 @@ router.get("/:id/shares", authRequired, async (req, res) => {
 });
 
 router.delete("/:id", authRequired, requireRoles("ADMIN"), async (req, res) => {
-  const id = Number(req.params.id);
+  const id = requirePositiveIntParam(req, res);
+  if (!id) {
+    return;
+  }
 
   try {
     const existing = await prisma.document.findUnique({ where: { id } });
