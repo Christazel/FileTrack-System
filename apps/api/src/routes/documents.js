@@ -9,6 +9,7 @@ const { authRequired, requireRoles } = require("../middleware/auth");
 const { writeLog } = require("../utils/log");
 const { notifyRoles, createNotification } = require("../utils/notify");
 const { getUserScope, buildDocumentAccessWhere, findDocumentWithAccess, isAdmin, isManager, isStaff } = require("../utils/access");
+const { requirePositiveIntParam } = require("../utils/params");
 
 const router = express.Router();
 
@@ -19,15 +20,6 @@ const metadataSchema = z.object({
   departmentId: z.coerce.number().int().positive().optional(),
 });
 
-function requirePositiveIntParam(req, res, paramName = "id") {
-  const rawValue = req.params?.[paramName];
-  const value = Number(rawValue);
-  if (!Number.isInteger(value) || value <= 0) {
-    res.status(400).json({ message: "ID tidak valid." });
-    return null;
-  }
-  return value;
-}
 
 function parseDateQuery(value) {
   if (!value) {

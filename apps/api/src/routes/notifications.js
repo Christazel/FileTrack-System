@@ -2,18 +2,9 @@ const express = require("express");
 
 const prisma = require("../prisma");
 const { authRequired } = require("../middleware/auth");
+const { requirePositiveIntParam } = require("../utils/params");
 
 const router = express.Router();
-
-function requirePositiveIntParam(req, res, paramName = "id") {
-  const rawValue = req.params?.[paramName];
-  const value = Number(rawValue);
-  if (!Number.isInteger(value) || value <= 0) {
-    res.status(400).json({ message: "ID tidak valid." });
-    return null;
-  }
-  return value;
-}
 
 router.get("/", authRequired, async (req, res) => {
   const notifications = await prisma.notification.findMany({

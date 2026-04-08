@@ -5,18 +5,9 @@ const { z } = require("zod");
 const prisma = require("../prisma");
 const { authRequired, requireRoles } = require("../middleware/auth");
 const { getUserScope, isAdmin, isManager } = require("../utils/access");
+const { requirePositiveIntParam } = require("../utils/params");
 
 const router = express.Router();
-
-function requirePositiveIntParam(req, res, paramName = "id") {
-  const rawValue = req.params?.[paramName];
-  const value = Number(rawValue);
-  if (!Number.isInteger(value) || value <= 0) {
-    res.status(400).json({ message: "ID tidak valid." });
-    return null;
-  }
-  return value;
-}
 
 router.get("/", authRequired, async (req, res) => {
   const userScope = await getUserScope(req.user.id);

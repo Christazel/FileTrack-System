@@ -3,18 +3,9 @@ const { z } = require("zod");
 
 const prisma = require("../prisma");
 const { authRequired, requireRoles } = require("../middleware/auth");
+const { requirePositiveIntParam } = require("../utils/params");
 
 const router = express.Router();
-
-function requirePositiveIntParam(req, res, paramName = "id") {
-  const rawValue = req.params?.[paramName];
-  const value = Number(rawValue);
-  if (!Number.isInteger(value) || value <= 0) {
-    res.status(400).json({ message: "ID tidak valid." });
-    return null;
-  }
-  return value;
-}
 
 const categorySchema = z.object({
   name: z.string().min(2).max(60),
