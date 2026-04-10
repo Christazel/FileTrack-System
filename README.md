@@ -49,6 +49,7 @@ Repo ini berbentuk monorepo fullstack:
    ```bash
    cd apps/api
    npm install
+    cp .env.example .env
    npx prisma migrate dev --name init
    npx prisma generate
    node prisma/seed.js
@@ -72,6 +73,7 @@ Repo ini berbentuk monorepo fullstack:
 - `npm run dev:api` / `npm run dev:web`
 - `npm run db:up` / `npm run db:down` / `npm run db:logs`
 - `npm run prisma:migrate` / `npm run prisma:generate` / `npm run prisma:studio`
+- `npm run smoke:api` -> Smoke test API (upload -> assign -> status -> comment -> version -> approve -> tracking)
 
 Frontend: `http://localhost:5173`
 Backend: `http://localhost:4000`
@@ -90,14 +92,21 @@ Semua akun memakai password: `Password123!`
 - `GET /api/auth/me`
 - `GET /api/dashboard/summary`
 - `GET /api/categories`
-- `POST /api/categories` (ADMIN/MANAGER)
+- `POST /api/categories` (ADMIN)
+- `PATCH /api/categories/:id` (ADMIN)
+- `DELETE /api/categories/:id` (ADMIN)
 - `GET /api/documents`
-- `POST /api/documents`
+- `POST /api/documents` (ADMIN/MANAGER)
 - `GET /api/documents/:id/preview`
 - `GET /api/documents/:id/versions`
 - `POST /api/documents/:id/versions`
 - `GET /api/documents/:id/shares`
 - `POST /api/documents/:id/share`
+- `PATCH /api/documents/:id/assign` (ADMIN/MANAGER)
+- `PATCH /api/documents/:id/status` (STAFF hanya IN_PROGRESS/DONE)
+- `POST /api/documents/:id/comments`
+- `GET /api/documents/:id/tracking`
+- `POST /api/documents/:id/decision` (ADMIN/MANAGER)
 - `GET /api/documents/:id/download`
 - `PUT /api/documents/:id` (ADMIN/MANAGER)
 - `DELETE /api/documents/:id` (ADMIN)
@@ -106,6 +115,19 @@ Semua akun memakai password: `Password123!`
 - `PATCH /api/notifications/:id/read`
 - `PATCH /api/notifications/read-all`
 - `GET /api/logs` (ADMIN/MANAGER)
+
+## Smoke Test API
+
+Jalankan ini untuk memastikan flow utama backend berjalan end-to-end.
+
+Prasyarat:
+- MySQL sudah jalan: `npm run db:up`
+- API sudah jalan: `npm run dev:api`
+
+Lalu jalankan:
+```bash
+npm run smoke:api
+```
 
 ## Demo Data
 
