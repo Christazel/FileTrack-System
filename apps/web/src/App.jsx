@@ -9,7 +9,6 @@ import PreviewModal from "./components/modals/PreviewModal";
 import ToastContainer from "./components/ui/ToastContainer";
 import OnboardingOverlay from "./components/ui/OnboardingOverlay";
 import {
-  TOAST_TIMEOUT_MS,
   publicFeatures,
   publicProofPoints,
   publicWorkflow,
@@ -18,7 +17,9 @@ import {
 import { useAdmin } from "./hooks/useAdmin";
 import { useAuth } from "./hooks/useAuth";
 import { useDocuments } from "./hooks/useDocuments";
+import { useOnboarding } from "./hooks/useOnboarding";
 import { useNotifications } from "./hooks/useNotifications";
+import { useToasts } from "./hooks/useToasts";
 
 import api from "./apiClient";
 
@@ -34,17 +35,7 @@ function App() {
   const sortBy = DEFAULT_SORT_BY;
   const sortOrder = DEFAULT_SORT_ORDER;
 
-  const [toasts, setToasts] = useState([]);
-  const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem("filetrack_onboarding_seen"));
-
-  const showToast = useCallback((message, type = "success") => {
-    const toastId = Date.now();
-    const newToast = { id: toastId, message, type };
-    setToasts((prev) => [...prev, newToast]);
-    setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== toastId));
-    }, TOAST_TIMEOUT_MS);
-  }, []);
+  const { toasts, showToast } = useToasts();
 
   const auth = useAuth({ api, showToast });
   const { token, user, email, password, error, success, setSuccess, setEmail, setPassword, handleLogin, logout: authLogout } = auth;
@@ -131,6 +122,8 @@ function App() {
   const unreadNotifications = notifications.filter((item) => !item.isRead).length;
   const recentDocuments = dashboard.recentDocuments || [];
 
+  const { showOnboarding, dismissOnboarding } = useOnboarding({ showToast });
+
   useEffect(() => {
     if (!success) {
       return;
@@ -206,12 +199,6 @@ function App() {
     const start = (currentPage - 1) * pageSize;
     return sortedDocuments.slice(start, start + pageSize);
   }, [sortedDocuments, currentPage, pageSize]);
-
-  function dismissOnboarding() {
-    localStorage.setItem("filetrack_onboarding_seen", "true");
-    setShowOnboarding(false);
-    showToast("Panduan ditutup. Anda dapat melihatnya kembali di menu.", "info");
-  }
 
   async function refreshAll() {
     await loadAll();
