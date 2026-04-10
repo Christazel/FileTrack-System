@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import axios from "axios";
 import LoginPage from "./components/LoginPage";
 import Sidebar from "./components/layout/Sidebar";
 import Topbar from "./components/layout/Topbar";
@@ -21,7 +20,7 @@ import { useAuth } from "./hooks/useAuth";
 import { useDocuments } from "./hooks/useDocuments";
 import { useNotifications } from "./hooks/useNotifications";
 
-const api = axios.create({ baseURL: "/api" });
+import api from "./apiClient";
 
 const DEFAULT_SORT_BY = "createdAt";
 const DEFAULT_SORT_ORDER = "desc";
