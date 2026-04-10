@@ -1559,7 +1559,7 @@ tbody tr:hover td { color: var(--ink); }
 }
 
 .dashboard-grid {
-  gap: 18px;
+  gap: 22px;
 }
 
 .documents-grid {
@@ -1631,7 +1631,7 @@ tbody tr:hover td { color: var(--ink); }
 }
 
 .panel {
-  padding: 22px;
+  padding: 26px;
 }
 
 .panel h3 {
@@ -1639,15 +1639,15 @@ tbody tr:hover td { color: var(--ink); }
 }
 
 .panel-heading {
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
 
 .stack-col {
-  gap: 18px;
+  gap: 22px;
 }
 
 .admin-stack {
-  gap: 22px;
+  gap: 26px;
 }
 
 .search-box {
@@ -1685,13 +1685,18 @@ tbody tr:hover td { color: var(--ink); }
 
 .doc-list {
   display: grid;
-  gap: 10px;
+  gap: 12px;
 }
 
 .doc-card {
-  padding: 16px;
+  padding: 18px;
   border-radius: 18px;
   transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+}
+
+.notification-list,
+.timeline-list {
+  gap: 12px;
 }
 
 .doc-card.interactive:hover {
@@ -2048,7 +2053,7 @@ tbody tr:hover td { color: var(--ink); }
 
 .home-doc-list,
 .home-notification-list {
-  gap: 10px;
+  gap: 12px;
 }
 
 .home-doc-card {
