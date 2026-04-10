@@ -9,6 +9,7 @@
     "dev:web": "npm --prefix apps/web run dev",
     "build:web": "npm --prefix apps/web run build",
     "lint:web": "npm --prefix apps/web run lint",
+    "smoke:api": "pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/smoke-api.ps1",
     "start:api": "npm --prefix apps/api run start",
     "seed": "npm --prefix apps/api run prisma:seed",
     "db:up": "docker compose up -d",
