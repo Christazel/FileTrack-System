@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
 import LoginPage from "./components/LoginPage";
 import Sidebar from "./components/layout/Sidebar";
@@ -11,13 +11,15 @@ import ToastContainer from "./components/ui/ToastContainer";
 import OnboardingOverlay from "./components/ui/OnboardingOverlay";
 import {
   TOAST_TIMEOUT_MS,
-  defaultDashboard,
-  emptyDocumentModal,
-  getApiErrorMessage,
   publicFeatures,
   publicProofPoints,
   publicWorkflow,
 } from "./appDefaults";
+
+import { useAdmin } from "./hooks/useAdmin";
+import { useAuth } from "./hooks/useAuth";
+import { useDocuments } from "./hooks/useDocuments";
+import { useNotifications } from "./hooks/useNotifications";
 
 const api = axios.create({ baseURL: "/api" });
 
@@ -25,37 +27,7 @@ const DEFAULT_SORT_BY = "createdAt";
 const DEFAULT_SORT_ORDER = "desc";
 
 function App() {
-  const [token, setToken] = useState("");
-  const [user, setUser] = useState(null);
-  const [email, setEmail] = useState("admin@filetrack.local");
-  const [password, setPassword] = useState("Password123!");
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
-
-  const [dashboard, setDashboard] = useState(defaultDashboard);
-  const [categories, setCategories] = useState([]);
-  const [documents, setDocuments] = useState([]);
-  const [logs, setLogs] = useState([]);
-  const [users, setUsers] = useState([]);
-  const [departments, setDepartments] = useState([]);
-  const [notifications, setNotifications] = useState([]);
-
-  const [query, setQuery] = useState("");
-  const [categoryId, setCategoryId] = useState("");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
-
-  const [newCategory, setNewCategory] = useState("");
-  const [uploadForm, setUploadForm] = useState({ title: "", categoryId: "", tags: "", file: null });
-
-  const [previewModal, setPreviewModal] = useState(emptyDocumentModal);
-  const [versionDrafts, setVersionDrafts] = useState({});
-  const [shareDrafts, setShareDrafts] = useState({});
-  const [documentVersions, setDocumentVersions] = useState([]);
-  const [documentShares, setDocumentShares] = useState([]);
-  const [documentComments, setDocumentComments] = useState([]);
-  const [documentLogs, setDocumentLogs] = useState([]);
   const [activeSection, setActiveSection] = useState("home");
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -66,15 +38,6 @@ function App() {
   const [toasts, setToasts] = useState([]);
   const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem("filetrack_onboarding_seen"));
 
-  const headers = useMemo(() => ({ Authorization: `Bearer ${token}` }), [token]);
-  const isManagerLike = user?.role === "ADMIN" || user?.role === "MANAGER";
-  const canManageCategories = user?.role === "ADMIN";
-  const canCreateDocuments = isManagerLike;
-  const isAdmin = user?.role === "ADMIN";
-
-  const unreadNotifications = notifications.filter((item) => !item.isRead).length;
-  const recentDocuments = dashboard.recentDocuments || [];
-
   const showToast = useCallback((message, type = "success") => {
     const toastId = Date.now();
     const newToast = { id: toastId, message, type };
@@ -84,12 +47,90 @@ function App() {
     }, TOAST_TIMEOUT_MS);
   }, []);
 
-  useEffect(() => {
-    localStorage.removeItem("filetrack_token");
-    localStorage.removeItem("filetrack_user");
-    sessionStorage.removeItem("filetrack_token");
-    sessionStorage.removeItem("filetrack_user");
-  }, []);
+  const auth = useAuth({ api, showToast });
+  const { token, user, email, password, error, success, setSuccess, setEmail, setPassword, handleLogin, logout: authLogout } = auth;
+
+  const isManagerLike = user?.role === "ADMIN" || user?.role === "MANAGER";
+  const canManageCategories = user?.role === "ADMIN";
+  const canCreateDocuments = isManagerLike;
+  const isAdmin = user?.role === "ADMIN";
+
+  const onAfterMutateRef = useRef(null);
+
+  const documentsApi = useDocuments({ api, token, showToast, onAfterMutateRef });
+  const adminApi = useAdmin({ api, token, showToast, onAfterMutateRef });
+  const notificationsApi = useNotifications({ api, token, showToast, isManagerLike, onAfterMutateRef });
+
+  const {
+    dashboard,
+    categories,
+    documents,
+    query,
+    setQuery,
+    categoryId,
+    setCategoryId,
+    dateFrom,
+    setDateFrom,
+    dateTo,
+    setDateTo,
+    resetFilters,
+    newCategory,
+    setNewCategory,
+    uploadForm,
+    setUploadForm,
+    previewModal,
+    setVersionDrafts,
+    shareDrafts,
+    setShareDrafts,
+    documentVersions,
+    documentShares,
+    documentComments,
+    documentLogs,
+    loadDocumentsDomain,
+    searchDocuments,
+    handleUpload,
+    createCategory,
+    adminUpdateCategory,
+    adminDeleteCategory,
+    downloadDocument,
+    openPreview,
+    openVersions,
+    closeModal,
+    addComment,
+    assignDocument,
+    updateWorkflowStatus,
+    decideDocument,
+    uploadVersion,
+    shareDocument,
+    resetDocumentsState,
+  } = documentsApi;
+
+  const {
+    users,
+    departments,
+    loadAdminDomain,
+    adminCreateUser,
+    adminUpdateUser,
+    adminResetPassword,
+    adminDeleteUser,
+    adminCreateDepartment,
+    adminUpdateDepartment,
+    adminDeleteDepartment,
+    resetAdminState,
+  } = adminApi;
+
+  const {
+    notifications,
+    logs,
+    loadNotifications,
+    loadLogs,
+    markNotificationRead,
+    markAllNotificationsRead,
+    resetNotificationsState,
+  } = notificationsApi;
+
+  const unreadNotifications = notifications.filter((item) => !item.isRead).length;
+  const recentDocuments = dashboard.recentDocuments || [];
 
   useEffect(() => {
     if (!success) {
@@ -101,197 +142,43 @@ function App() {
     }, 2800);
 
     return () => clearTimeout(timer);
-  }, [success]);
+  }, [setSuccess, success]);
 
-  function resolveDocument(documentOrId) {
-    if (typeof documentOrId === "object" && documentOrId) {
-      return documentOrId;
+  const loadAll = useCallback(async () => {
+    if (!token) {
+      return;
     }
 
-    return documents.find((document) => document.id === documentOrId) || { id: documentOrId };
-  }
+    setLoading(true);
 
-  const loadData = useCallback(
-    async (activeToken) => {
-      if (!activeToken) {
-        return;
-      }
+    try {
+      await Promise.all([
+        loadDocumentsDomain(),
+        loadAdminDomain(),
+        loadNotifications(),
+        loadLogs(),
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  }, [loadAdminDomain, loadDocumentsDomain, loadLogs, loadNotifications, token]);
 
-      setLoading(true);
-      setError("");
-
-      try {
-        const authHeaders = { Authorization: `Bearer ${activeToken}` };
-        const requests = [
-          api.get("/dashboard/summary", { headers: authHeaders }),
-          api.get("/categories", { headers: authHeaders }),
-          api.get("/documents", { headers: authHeaders }),
-          api.get("/users", { headers: authHeaders }),
-          api.get("/departments", { headers: authHeaders }),
-          api.get("/notifications", { headers: authHeaders }),
-        ];
-
-        if (isManagerLike) {
-          requests.push(api.get("/logs", { headers: authHeaders }));
-        }
-
-        const results = await Promise.all(requests);
-        const [dashboardRes, categoriesRes, documentsRes, usersRes, departmentsRes, notificationsRes, logsRes] = results;
-
-        setDashboard(dashboardRes.data);
-        setCategories(categoriesRes.data);
-        setDocuments(documentsRes.data);
-        setUsers(usersRes.data);
-        setDepartments(departmentsRes.data);
-        setNotifications(notificationsRes.data);
-        setLogs(logsRes?.data?.items || []);
-      } catch (requestError) {
-        showToast(getApiErrorMessage(requestError, "Gagal mengambil data."), "error");
-      } finally {
-        setLoading(false);
-      }
-    },
-    [isManagerLike, showToast],
-  );
+  useEffect(() => {
+    onAfterMutateRef.current = loadAll;
+  }, [loadAll]);
 
   useEffect(() => {
     if (token && user) {
-      loadData(token);
+      loadAll();
     }
-  }, [token, user, loadData]);
+  }, [token, user, loadAll]);
 
-  useEffect(() => {
-    return () => {
-      if (previewModal.blobUrl) {
-        URL.revokeObjectURL(previewModal.blobUrl);
-      }
-    };
-  }, [previewModal.blobUrl]);
-
-  async function handleLogin(event) {
-    event.preventDefault();
-    setError("");
-    setSuccess("");
-
-    try {
-      const response = await api.post("/auth/login", { email, password });
-      const nextToken = response.data.token;
-      const nextUser = response.data.user;
-
-      setToken(nextToken);
-      setUser(nextUser);
-      showToast("Login berhasil.");
-    } catch (requestError) {
-      showToast(getApiErrorMessage(requestError, "Login gagal."), "error");
-    }
-  }
-
-  function logout() {
-    setToken("");
-    setUser(null);
-    setDocuments([]);
-    setNotifications([]);
-    setDashboard(defaultDashboard);
-    setLogs([]);
-    setDepartments([]);
-    setPreviewModal(emptyDocumentModal);
-  }
-
-  async function adminCreateUser(payload) {
-    try {
-      await api.post(
-        "/users",
-        {
-          name: payload.name,
-          email: payload.email,
-          role: payload.role,
-          departmentId: payload.departmentId || undefined,
-          password: payload.password || undefined,
-        },
-        { headers },
-      );
-      showToast("User berhasil dibuat.");
-      await loadData(token);
-    } catch (requestError) {
-      showToast(getApiErrorMessage(requestError, "Gagal membuat user."), "error");
-    }
-  }
-
-  async function adminUpdateUser(userId, payload) {
-    try {
-      await api.patch(
-        `/users/${userId}`,
-        {
-          ...(payload.name ? { name: payload.name } : {}),
-          ...(payload.email ? { email: payload.email } : {}),
-          ...(payload.role ? { role: payload.role } : {}),
-          ...(payload.departmentId !== undefined ? { departmentId: payload.departmentId } : {}),
-        },
-        { headers },
-      );
-      showToast("User diperbarui.");
-      await loadData(token);
-    } catch (requestError) {
-      showToast(getApiErrorMessage(requestError, "Gagal update user."), "error");
-    }
-  }
-
-  async function adminResetPassword(userId) {
-    try {
-      await api.post(`/users/${userId}/reset-password`, {}, { headers });
-      showToast("Password direset ke default (atau sesuai input backend).");
-    } catch (requestError) {
-      showToast(getApiErrorMessage(requestError, "Gagal reset password."), "error");
-    }
-  }
-
-  async function adminDeleteUser(userId) {
-    try {
-      await api.delete(`/users/${userId}`, { headers });
-      showToast("User dihapus.");
-      await loadData(token);
-    } catch (requestError) {
-      showToast(getApiErrorMessage(requestError, "Gagal menghapus user."), "error");
-    }
-  }
-
-  async function adminCreateDepartment(payload) {
-    try {
-      await api.post(
-        "/departments",
-        { name: payload.name },
-        { headers },
-      );
-      showToast("Departemen berhasil dibuat.");
-      await loadData(token);
-    } catch (requestError) {
-      showToast(getApiErrorMessage(requestError, "Gagal membuat departemen."), "error");
-    }
-  }
-
-  async function adminUpdateDepartment(departmentId, payload) {
-    try {
-      await api.patch(
-        `/departments/${departmentId}`,
-        { name: payload.name },
-        { headers },
-      );
-      showToast("Departemen diperbarui.");
-      await loadData(token);
-    } catch (requestError) {
-      showToast(getApiErrorMessage(requestError, "Gagal update departemen."), "error");
-    }
-  }
-
-  async function adminDeleteDepartment(departmentId) {
-    try {
-      await api.delete(`/departments/${departmentId}`, { headers });
-      showToast("Departemen dihapus.");
-      await loadData(token);
-    } catch (requestError) {
-      showToast(getApiErrorMessage(requestError, "Gagal menghapus departemen."), "error");
-    }
-  }
+  const logout = useCallback(() => {
+    authLogout();
+    resetDocumentsState();
+    resetAdminState();
+    resetNotificationsState();
+  }, [authLogout, resetAdminState, resetDocumentsState, resetNotificationsState]);
 
   const sortedDocuments = useMemo(() => {
     const sorted = [...documents].sort((a, b) => {
@@ -327,308 +214,10 @@ function App() {
     showToast("Panduan ditutup. Anda dapat melihatnya kembali di menu.", "info");
   }
 
-  async function searchDocuments() {
-    const params = {
-      ...(query ? { q: query } : {}),
-      ...(categoryId ? { categoryId } : {}),
-      ...(dateFrom ? { dateFrom } : {}),
-      ...(dateTo ? { dateTo } : {}),
-    };
-
-    try {
-      const response = await api.get("/documents", { headers, params });
-      setDocuments(response.data);
-    } catch (requestError) {
-      showToast(getApiErrorMessage(requestError, "Pencarian gagal."), "error");
-    }
-  }
-
-  async function handleUpload(event) {
-    event.preventDefault();
-    const formData = new FormData();
-    formData.append("title", uploadForm.title);
-    formData.append("categoryId", uploadForm.categoryId);
-    formData.append("tags", uploadForm.tags);
-    formData.append("file", uploadForm.file);
-
-    try {
-      await api.post("/documents", formData, {
-        headers: {
-          ...headers,
-          "Content-Type": "multipart/form-data",
-        },
-      });
-
-      setUploadForm({ title: "", categoryId: "", tags: "", file: null });
-      showToast("Dokumen berhasil diunggah.");
-      await loadData(token);
-    } catch (requestError) {
-      showToast(getApiErrorMessage(requestError, "Upload gagal."), "error");
-    }
-  }
-
-  async function createCategory(event) {
-    event.preventDefault();
-    if (!newCategory.trim()) {
-      return;
-    }
-
-    try {
-      await api.post("/categories", { name: newCategory.trim() }, { headers });
-      setNewCategory("");
-      showToast("Kategori berhasil ditambahkan.");
-      await loadData(token);
-    } catch (requestError) {
-      showToast(getApiErrorMessage(requestError, "Gagal membuat kategori."), "error");
-    }
-  }
-
-  async function adminUpdateCategory(categoryId, name) {
-    try {
-      await api.patch(`/categories/${categoryId}`, { name }, { headers });
-      showToast("Kategori diperbarui.");
-      await loadData(token);
-    } catch (requestError) {
-      showToast(getApiErrorMessage(requestError, "Gagal update kategori."), "error");
-    }
-  }
-
-  async function adminDeleteCategory(categoryId) {
-    try {
-      await api.delete(`/categories/${categoryId}`, { headers });
-      showToast("Kategori dihapus.");
-      await loadData(token);
-    } catch (requestError) {
-      showToast(getApiErrorMessage(requestError, "Gagal menghapus kategori."), "error");
-    }
-  }
-
-  async function downloadDocument(id, originalName) {
-    try {
-      const response = await api.get(`/documents/${id}/download`, {
-        headers,
-        responseType: "blob",
-      });
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute("download", originalName);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-      showToast("Download berhasil.");
-      await loadData(token);
-    } catch (requestError) {
-      showToast(getApiErrorMessage(requestError, "Gagal download dokumen."), "error");
-    }
-  }
-
-  async function openPreview(doc) {
-    if (previewModal.blobUrl) {
-      URL.revokeObjectURL(previewModal.blobUrl);
-    }
-
-    if (doc.mimeType !== "application/pdf") {
-      setPreviewModal({ type: "detail", document: doc, blobUrl: "" });
-      return;
-    }
-
-    try {
-      const response = await api.get(`/documents/${doc.id}/preview`, {
-        headers,
-        responseType: "blob",
-      });
-      const blobUrl = URL.createObjectURL(new Blob([response.data], { type: "application/pdf" }));
-      setPreviewModal({ type: "preview", document: doc, blobUrl });
-    } catch (requestError) {
-      showToast(getApiErrorMessage(requestError, "Gagal memuat preview."), "error");
-    }
-  }
-
-  async function openVersions(doc) {
-    const activeDocument = resolveDocument(doc);
-
-    try {
-      const trackingRes = await api.get(`/documents/${activeDocument.id}/tracking`, { headers });
-      const tracked = trackingRes.data;
-
-      setDocumentVersions(tracked.versions || []);
-      setDocumentShares(tracked.shares || []);
-      setDocumentComments(tracked.comments || []);
-      setDocumentLogs(tracked.logs || []);
-      setPreviewModal({ type: "versions", document: tracked, blobUrl: "" });
-    } catch (requestError) {
-      showToast(getApiErrorMessage(requestError, "Gagal memuat versi dokumen."), "error");
-    }
-  }
-
-  async function addComment(docId, message) {
-    if (!message?.trim()) {
-      showToast("Komentar tidak boleh kosong.", "error");
-      return;
-    }
-
-    try {
-      await api.post(
-        `/documents/${docId}/comments`,
-        { message: message.trim() },
-        { headers },
-      );
-      showToast("Komentar ditambahkan.");
-      await loadData(token);
-      await openVersions(docId);
-    } catch (requestError) {
-      showToast(getApiErrorMessage(requestError, "Gagal menambah komentar."), "error");
-    }
-  }
-
-  async function assignDocument(docId, assignedToId) {
-    if (!assignedToId) {
-      showToast("Pilih staff terlebih dahulu.", "error");
-      return;
-    }
-
-    try {
-      await api.patch(
-        `/documents/${docId}/assign`,
-        { assignedToId: Number(assignedToId) },
-        { headers },
-      );
-      showToast("Dokumen berhasil di-assign.");
-      await loadData(token);
-      await openVersions(docId);
-    } catch (requestError) {
-      showToast(getApiErrorMessage(requestError, "Gagal assign dokumen."), "error");
-    }
-  }
-
-  async function updateWorkflowStatus(docId, workflowStatus) {
-    if (!workflowStatus) {
-      showToast("Pilih status terlebih dahulu.", "error");
-      return;
-    }
-
-    try {
-      await api.patch(
-        `/documents/${docId}/status`,
-        { workflowStatus },
-        { headers },
-      );
-      showToast("Status diperbarui.");
-      await loadData(token);
-      await openVersions(docId);
-    } catch (requestError) {
-      showToast(getApiErrorMessage(requestError, "Gagal update status."), "error");
-    }
-  }
-
-  async function decideDocument(docId, approvalStatus, note) {
-    try {
-      await api.post(
-        `/documents/${docId}/decision`,
-        { approvalStatus, ...(note ? { note } : {}) },
-        { headers },
-      );
-      showToast("Keputusan tersimpan.");
-      await loadData(token);
-      await openVersions(docId);
-    } catch (requestError) {
-      showToast(getApiErrorMessage(requestError, "Gagal menyimpan keputusan."), "error");
-    }
-  }
-
-  async function uploadVersion(docId) {
-    const draft = versionDrafts[docId];
-    if (!draft?.file) {
-      showToast("Pilih file versi baru terlebih dahulu.", "error");
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append("file", draft.file);
-
-    try {
-      await api.post(`/documents/${docId}/versions`, formData, {
-        headers: {
-          ...headers,
-          "Content-Type": "multipart/form-data",
-        },
-      });
-      setVersionDrafts((current) => ({ ...current, [docId]: { file: null } }));
-      showToast("Versi baru berhasil ditambahkan.");
-      await loadData(token);
-      await openVersions(docId);
-    } catch (requestError) {
-      showToast(getApiErrorMessage(requestError, "Gagal menambah versi."), "error");
-    }
-  }
-
-  async function shareDocument(docId) {
-    const draft = shareDrafts[docId];
-    if (!draft?.sharedToId) {
-      showToast("Pilih user tujuan terlebih dahulu.", "error");
-      return;
-    }
-
-    try {
-      await api.post(
-        `/documents/${docId}/share`,
-        {
-          sharedToId: Number(draft.sharedToId),
-          message: draft.message || "",
-        },
-        { headers },
-      );
-      setShareDrafts((current) => ({ ...current, [docId]: { sharedToId: "", message: "" } }));
-      showToast("Dokumen berhasil dibagikan.");
-      await loadData(token);
-      await openVersions(docId);
-    } catch (requestError) {
-      showToast(getApiErrorMessage(requestError, "Gagal membagikan dokumen."), "error");
-    }
-  }
-
-  async function markNotificationRead(notificationId) {
-    try {
-      await api.patch(`/notifications/${notificationId}/read`, {}, { headers });
-      await loadData(token);
-    } catch (requestError) {
-      showToast(getApiErrorMessage(requestError, "Gagal memperbarui notifikasi."), "error");
-    }
-  }
-
-  async function markAllNotificationsRead() {
-    try {
-      await api.patch("/notifications/read-all", {}, { headers });
-      await loadData(token);
-    } catch (requestError) {
-      showToast(getApiErrorMessage(requestError, "Gagal menandai notifikasi."), "error");
-    }
-  }
-
   async function refreshAll() {
-    await loadData(token);
+    await loadAll();
     showToast("Data terbaru berhasil dimuat.");
   }
-
-  function resetFilters() {
-    setQuery("");
-    setCategoryId("");
-    setDateFrom("");
-    setDateTo("");
-  }
-
-  const closeModal = () => {
-    if (previewModal.blobUrl) {
-      URL.revokeObjectURL(previewModal.blobUrl);
-    }
-    setPreviewModal(emptyDocumentModal);
-    setDocumentVersions([]);
-    setDocumentShares([]);
-    setDocumentComments([]);
-    setDocumentLogs([]);
-  };
 
   if (!token || !user) {
     return (
