@@ -1,9 +1,10 @@
-const path = require("path");
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
 const morgan = require("morgan");
 require("dotenv").config();
+
+const { API_PREFIX, CORS_ORIGIN, IS_PROD, PORT, UPLOADS_PATH } = require("./config");
 
 const prisma = require("./prisma");
 const authRoutes = require("./routes/auth");
@@ -16,15 +17,13 @@ const notificationRoutes = require("./routes/notifications");
 const departmentRoutes = require("./routes/departments");
 
 const app = express();
-const API_PREFIX = "/api";
-const uploadsPath = path.resolve(__dirname, "../uploads");
 
 app.use(helmet());
-app.use(cors({ origin: process.env.CORS_ORIGIN || "http://localhost:5173" }));
+app.use(cors({ origin: CORS_ORIGIN }));
 app.use(express.json());
 app.use(morgan("dev"));
 
-app.use("/uploads", express.static(uploadsPath));
+app.use("/uploads", express.static(UPLOADS_PATH));
 
 app.get(`${API_PREFIX}/health`, (_req, res) => {
   res.json({ status: "ok", service: "FileTrack API" });
@@ -48,10 +47,11 @@ app.use((error, _req, res, _next) => {
     return res.status(400).json({ message: "Ukuran file maksimal 10MB." });
   }
 
-  return res.status(500).json({ message: "Terjadi kesalahan server.", error: error?.message });
+  return res.status(500).json({
+    message: "Terjadi kesalahan server.",
+    ...(IS_PROD ? {} : { error: error?.message }),
+  });
 });
-
-const PORT = Number(process.env.PORT || 4000);
 
 app.listen(PORT, async () => {
   try {
