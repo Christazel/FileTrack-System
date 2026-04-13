@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import LoginPage from "./components/LoginPage";
 import Sidebar from "./components/layout/Sidebar";
 import Topbar from "./components/layout/Topbar";
@@ -17,6 +17,7 @@ import {
 import { useAdmin } from "./hooks/useAdmin";
 import { useAuth } from "./hooks/useAuth";
 import { useDocuments } from "./hooks/useDocuments";
+import { useDocumentPagination } from "./hooks/useDocumentPagination";
 import { useOnboarding } from "./hooks/useOnboarding";
 import { useNotifications } from "./hooks/useNotifications";
 import { useToasts } from "./hooks/useToasts";
@@ -29,9 +30,6 @@ const DEFAULT_SORT_ORDER = "desc";
 function App() {
   const [loading, setLoading] = useState(false);
   const [activeSection, setActiveSection] = useState("home");
-
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize] = useState(10);
   const sortBy = DEFAULT_SORT_BY;
   const sortOrder = DEFAULT_SORT_ORDER;
 
@@ -124,6 +122,14 @@ function App() {
 
   const { showOnboarding, dismissOnboarding } = useOnboarding({ showToast });
 
+  const {
+    currentPage,
+    setCurrentPage,
+    sortedDocuments,
+    totalPages,
+    paginatedDocuments,
+  } = useDocumentPagination({ documents, sortBy, sortOrder, initialPageSize: 10 });
+
   useEffect(() => {
     if (!success) {
       return;
@@ -171,34 +177,6 @@ function App() {
     resetAdminState();
     resetNotificationsState();
   }, [authLogout, resetAdminState, resetDocumentsState, resetNotificationsState]);
-
-  const sortedDocuments = useMemo(() => {
-    const sorted = [...documents].sort((a, b) => {
-      let aVal = a[sortBy];
-      let bVal = b[sortBy];
-
-      if (sortBy === "createdAt" || sortBy === "updatedAt") {
-        aVal = new Date(a[sortBy]);
-        bVal = new Date(b[sortBy]);
-      }
-
-      if (typeof aVal === "string") {
-        aVal = aVal.toLowerCase();
-        bVal = bVal.toLowerCase();
-      }
-
-      if (aVal < bVal) return sortOrder === "asc" ? -1 : 1;
-      if (aVal > bVal) return sortOrder === "asc" ? 1 : -1;
-      return 0;
-    });
-    return sorted;
-  }, [documents, sortBy, sortOrder]);
-
-  const totalPages = Math.ceil(sortedDocuments.length / pageSize);
-  const paginatedDocuments = useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
-    return sortedDocuments.slice(start, start + pageSize);
-  }, [sortedDocuments, currentPage, pageSize]);
 
   async function refreshAll() {
     await loadAll();
