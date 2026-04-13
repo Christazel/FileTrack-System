@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import LoginPage from "./components/LoginPage";
 import Sidebar from "./components/layout/Sidebar";
 import Topbar from "./components/layout/Topbar";
@@ -16,6 +16,7 @@ import {
 
 import { useAdmin } from "./hooks/useAdmin";
 import { useAppDataLoader } from "./hooks/useAppDataLoader";
+import { useAppLogout } from "./hooks/useAppLogout";
 import { useAuth } from "./hooks/useAuth";
 import { useDocuments } from "./hooks/useDocuments";
 import { useDocumentPagination } from "./hooks/useDocumentPagination";
@@ -153,12 +154,7 @@ function App() {
     showToast,
   });
 
-  const logout = useCallback(() => {
-    authLogout();
-    resetDocumentsState();
-    resetAdminState();
-    resetNotificationsState();
-  }, [authLogout, resetAdminState, resetDocumentsState, resetNotificationsState]);
+  const logout = useAppLogout({ authLogout, resetDocumentsState, resetAdminState, resetNotificationsState });
 
   if (!token || !user) {
     return (
