@@ -1,7 +1,9 @@
 const path = require("path");
 
 const API_PREFIX = "/api";
-const PORT = Number(process.env.PORT || 4000);
+const PORT_RAW = process.env.PORT;
+const parsedPort = PORT_RAW === undefined ? 4000 : Number(PORT_RAW);
+const PORT = Number.isFinite(parsedPort) ? parsedPort : 4000;
 const CORS_ORIGIN_RAW = process.env.CORS_ORIGIN || "http://localhost:5173";
 const CORS_ORIGIN = (() => {
   const raw = String(CORS_ORIGIN_RAW).trim();

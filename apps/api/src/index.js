@@ -1,4 +1,5 @@
 const express = require("express");
+const fs = require("fs");
 const cors = require("cors");
 const helmet = require("helmet");
 const morgan = require("morgan");
@@ -22,6 +23,8 @@ app.use(helmet());
 app.use(cors({ origin: CORS_ORIGIN }));
 app.use(express.json());
 app.use(morgan("dev"));
+
+fs.mkdirSync(UPLOADS_PATH, { recursive: true });
 
 app.use("/uploads", express.static(UPLOADS_PATH));
 
