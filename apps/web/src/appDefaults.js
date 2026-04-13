@@ -14,7 +14,38 @@ export const defaultDashboard = {
 export const TOAST_TIMEOUT_MS = 3000;
 
 export function getApiErrorMessage(error, fallbackMessage) {
-  return error?.response?.data?.message || fallbackMessage;
+  const response = error?.response;
+  const data = response?.data;
+
+  if (typeof data === "string" && data.trim()) {
+    return data;
+  }
+
+  if (data && typeof data === "object") {
+    if (typeof data.message === "string" && data.message.trim()) {
+      return data.message;
+    }
+
+    if (typeof data.error === "string" && data.error.trim()) {
+      return data.error;
+    }
+  }
+
+  const code = error?.code;
+  if (code === "ECONNABORTED") {
+    return "Request timeout. Coba lagi.";
+  }
+
+  const message = error?.message;
+  if (typeof message === "string" && message.toLowerCase().includes("network error")) {
+    return "Tidak dapat terhubung ke server.";
+  }
+
+  if (error?.request && !response) {
+    return "Tidak dapat terhubung ke server.";
+  }
+
+  return fallbackMessage;
 }
 
 export const publicFeatures = [
