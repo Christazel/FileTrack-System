@@ -15,6 +15,7 @@ import {
 } from "./appDefaults";
 
 import { useAdmin } from "./hooks/useAdmin";
+import { useAppDataLoader } from "./hooks/useAppDataLoader";
 import { useAuth } from "./hooks/useAuth";
 import { useDocuments } from "./hooks/useDocuments";
 import { useDocumentPagination } from "./hooks/useDocumentPagination";
@@ -28,7 +29,6 @@ const DEFAULT_SORT_BY = "createdAt";
 const DEFAULT_SORT_ORDER = "desc";
 
 function App() {
-  const [loading, setLoading] = useState(false);
   const [activeSection, setActiveSection] = useState("home");
   const sortBy = DEFAULT_SORT_BY;
   const sortOrder = DEFAULT_SORT_ORDER;
@@ -142,34 +142,16 @@ function App() {
     return () => clearTimeout(timer);
   }, [setSuccess, success]);
 
-  const loadAll = useCallback(async () => {
-    if (!token) {
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      await Promise.all([
-        loadDocumentsDomain(),
-        loadAdminDomain(),
-        loadNotifications(),
-        loadLogs(),
-      ]);
-    } finally {
-      setLoading(false);
-    }
-  }, [loadAdminDomain, loadDocumentsDomain, loadLogs, loadNotifications, token]);
-
-  useEffect(() => {
-    onAfterMutateRef.current = loadAll;
-  }, [loadAll]);
-
-  useEffect(() => {
-    if (token && user) {
-      loadAll();
-    }
-  }, [token, user, loadAll]);
+  const { loading, refreshAll } = useAppDataLoader({
+    token,
+    user,
+    onAfterMutateRef,
+    loadDocumentsDomain,
+    loadAdminDomain,
+    loadNotifications,
+    loadLogs,
+    showToast,
+  });
 
   const logout = useCallback(() => {
     authLogout();
@@ -177,11 +159,6 @@ function App() {
     resetAdminState();
     resetNotificationsState();
   }, [authLogout, resetAdminState, resetDocumentsState, resetNotificationsState]);
-
-  async function refreshAll() {
-    await loadAll();
-    showToast("Data terbaru berhasil dimuat.");
-  }
 
   if (!token || !user) {
     return (
