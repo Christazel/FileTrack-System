@@ -4,6 +4,7 @@ const path = require("path");
 const { z } = require("zod");
 
 const prisma = require("../prisma");
+const { IS_PROD } = require("../config");
 const upload = require("../middleware/upload");
 const { authRequired, requireRoles } = require("../middleware/auth");
 const { writeLog } = require("../utils/log");
@@ -185,7 +186,10 @@ router.post(
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Input dokumen tidak valid.", errors: error.issues });
       }
-      return res.status(500).json({ message: "Gagal upload dokumen.", error: error.message });
+      return res.status(500).json({
+        message: "Gagal upload dokumen.",
+        ...(IS_PROD ? {} : { error: error.message }),
+      });
     }
   },
 );
@@ -370,7 +374,10 @@ router.post(
 
       return res.status(201).json(updated);
     } catch (error) {
-      return res.status(500).json({ message: "Gagal menambah versi dokumen.", error: error.message });
+      return res.status(500).json({
+        message: "Gagal menambah versi dokumen.",
+        ...(IS_PROD ? {} : { error: error.message }),
+      });
     }
   },
 );
@@ -454,7 +461,10 @@ router.post("/:id/share", authRequired, requireRoles("ADMIN", "MANAGER"), async 
     if (error instanceof z.ZodError) {
       return res.status(400).json({ message: "Input share tidak valid.", errors: error.issues });
     }
-    return res.status(500).json({ message: "Gagal membagikan dokumen.", error: error.message });
+    return res.status(500).json({
+      message: "Gagal membagikan dokumen.",
+      ...(IS_PROD ? {} : { error: error.message }),
+    });
   }
 });
 
@@ -546,7 +556,10 @@ router.patch("/:id/assign", authRequired, requireRoles("ADMIN", "MANAGER"), asyn
     if (error instanceof z.ZodError) {
       return res.status(400).json({ message: "Input assign tidak valid.", errors: error.issues });
     }
-    return res.status(500).json({ message: "Gagal assign dokumen.", error: error.message });
+    return res.status(500).json({
+      message: "Gagal assign dokumen.",
+      ...(IS_PROD ? {} : { error: error.message }),
+    });
   }
 });
 
@@ -616,7 +629,10 @@ router.patch("/:id/status", authRequired, async (req, res) => {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ message: "Input status tidak valid.", errors: error.issues });
     }
-    return res.status(500).json({ message: "Gagal update status.", error: error.message });
+    return res.status(500).json({
+      message: "Gagal update status.",
+      ...(IS_PROD ? {} : { error: error.message }),
+    });
   }
 });
 
@@ -694,7 +710,10 @@ router.post("/:id/decision", authRequired, requireRoles("ADMIN", "MANAGER"), asy
     if (error instanceof z.ZodError) {
       return res.status(400).json({ message: "Input keputusan tidak valid.", errors: error.issues });
     }
-    return res.status(500).json({ message: "Gagal menyimpan keputusan.", error: error.message });
+    return res.status(500).json({
+      message: "Gagal menyimpan keputusan.",
+      ...(IS_PROD ? {} : { error: error.message }),
+    });
   }
 });
 
@@ -815,7 +834,10 @@ router.post("/:id/comments", authRequired, async (req, res) => {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ message: "Input komentar tidak valid.", errors: error.issues });
     }
-    return res.status(500).json({ message: "Gagal menambah komentar.", error: error.message });
+    return res.status(500).json({
+      message: "Gagal menambah komentar.",
+      ...(IS_PROD ? {} : { error: error.message }),
+    });
   }
 });
 
@@ -872,7 +894,10 @@ router.put("/:id", authRequired, requireRoles("ADMIN", "MANAGER"), async (req, r
     if (error instanceof z.ZodError) {
       return res.status(400).json({ message: "Input update tidak valid.", errors: error.issues });
     }
-    return res.status(500).json({ message: "Gagal update dokumen.", error: error.message });
+    return res.status(500).json({
+      message: "Gagal update dokumen.",
+      ...(IS_PROD ? {} : { error: error.message }),
+    });
   }
 });
 
@@ -923,7 +948,10 @@ router.delete("/:id", authRequired, requireRoles("ADMIN"), async (req, res) => {
 
     return res.json({ message: "Dokumen dihapus." });
   } catch (error) {
-    return res.status(500).json({ message: "Gagal hapus dokumen.", error: error.message });
+    return res.status(500).json({
+      message: "Gagal hapus dokumen.",
+      ...(IS_PROD ? {} : { error: error.message }),
+    });
   }
 });
 

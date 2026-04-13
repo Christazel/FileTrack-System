@@ -2,6 +2,7 @@ const express = require("express");
 const { z } = require("zod");
 
 const prisma = require("../prisma");
+const { IS_PROD } = require("../config");
 const { authRequired, requireRoles } = require("../middleware/auth");
 const { requirePositiveIntParam } = require("../utils/params");
 
@@ -60,7 +61,10 @@ router.patch("/:id", authRequired, requireRoles("ADMIN"), async (req, res) => {
       return res.status(404).json({ message: "Kategori tidak ditemukan." });
     }
 
-    return res.status(500).json({ message: "Gagal mengubah kategori.", error: error.message });
+    return res.status(500).json({
+      message: "Gagal mengubah kategori.",
+      ...(IS_PROD ? {} : { error: error.message }),
+    });
   }
 });
 
@@ -80,7 +84,7 @@ router.delete("/:id", authRequired, requireRoles("ADMIN"), async (req, res) => {
 
     return res.status(409).json({
       message: "Kategori tidak bisa dihapus karena masih dipakai dokumen.",
-      error: error.message,
+      ...(IS_PROD ? {} : { error: error.message }),
     });
   }
 });

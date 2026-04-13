@@ -2,6 +2,7 @@ const express = require("express");
 const { z } = require("zod");
 
 const prisma = require("../prisma");
+const { IS_PROD } = require("../config");
 const { authRequired, requireRoles } = require("../middleware/auth");
 const { requirePositiveIntParam } = require("../utils/params");
 
@@ -39,7 +40,10 @@ router.post("/", authRequired, requireRoles("ADMIN"), async (req, res) => {
       return res.status(409).json({ message: "Nama department sudah ada." });
     }
 
-    return res.status(500).json({ message: "Gagal membuat department.", error: error.message });
+    return res.status(500).json({
+      message: "Gagal membuat department.",
+      ...(IS_PROD ? {} : { error: error.message }),
+    });
   }
 });
 
@@ -71,7 +75,10 @@ router.patch("/:id", authRequired, requireRoles("ADMIN"), async (req, res) => {
       return res.status(409).json({ message: "Nama department sudah digunakan." });
     }
 
-    return res.status(500).json({ message: "Gagal update department.", error: error.message });
+    return res.status(500).json({
+      message: "Gagal update department.",
+      ...(IS_PROD ? {} : { error: error.message }),
+    });
   }
 });
 
@@ -86,7 +93,10 @@ router.delete("/:id", authRequired, requireRoles("ADMIN"), async (req, res) => {
     return res.json({ message: "Department dihapus." });
   } catch (error) {
     // Likely FK constraint (users/documents still reference it)
-    return res.status(409).json({ message: "Department tidak bisa dihapus karena masih dipakai.", error: error.message });
+    return res.status(409).json({
+      message: "Department tidak bisa dihapus karena masih dipakai.",
+      ...(IS_PROD ? {} : { error: error.message }),
+    });
   }
 });
 

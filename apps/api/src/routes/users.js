@@ -3,6 +3,7 @@ const bcrypt = require("bcryptjs");
 const { z } = require("zod");
 
 const prisma = require("../prisma");
+const { IS_PROD } = require("../config");
 const { authRequired, requireRoles } = require("../middleware/auth");
 const { getUserScope, isAdmin, isManager } = require("../utils/access");
 const { requirePositiveIntParam } = require("../utils/params");
@@ -85,7 +86,10 @@ router.post("/", authRequired, requireRoles("ADMIN"), async (req, res) => {
       return res.status(409).json({ message: "Email sudah terdaftar." });
     }
 
-    return res.status(500).json({ message: "Gagal membuat user.", error: error.message });
+    return res.status(500).json({
+      message: "Gagal membuat user.",
+      ...(IS_PROD ? {} : { error: error.message }),
+    });
   }
 });
 
@@ -125,7 +129,10 @@ router.patch("/:id", authRequired, requireRoles("ADMIN"), async (req, res) => {
       return res.status(409).json({ message: "Email sudah digunakan." });
     }
 
-    return res.status(500).json({ message: "Gagal update user.", error: error.message });
+    return res.status(500).json({
+      message: "Gagal update user.",
+      ...(IS_PROD ? {} : { error: error.message }),
+    });
   }
 });
 
@@ -153,7 +160,10 @@ router.post("/:id/reset-password", authRequired, requireRoles("ADMIN"), async (r
     if (error instanceof z.ZodError) {
       return res.status(400).json({ message: "Input reset password tidak valid.", errors: error.issues });
     }
-    return res.status(500).json({ message: "Gagal reset password.", error: error.message });
+    return res.status(500).json({
+      message: "Gagal reset password.",
+      ...(IS_PROD ? {} : { error: error.message }),
+    });
   }
 });
 
@@ -171,7 +181,10 @@ router.delete("/:id", authRequired, requireRoles("ADMIN"), async (req, res) => {
     await prisma.user.delete({ where: { id } });
     return res.json({ message: "User dihapus." });
   } catch (error) {
-    return res.status(500).json({ message: "Gagal menghapus user.", error: error.message });
+    return res.status(500).json({
+      message: "Gagal menghapus user.",
+      ...(IS_PROD ? {} : { error: error.message }),
+    });
   }
 });
 

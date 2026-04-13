@@ -4,6 +4,7 @@ const jwt = require("jsonwebtoken");
 const { z } = require("zod");
 
 const prisma = require("../prisma");
+const { IS_PROD } = require("../config");
 const { authRequired } = require("../middleware/auth");
 const { writeLog } = require("../utils/log");
 
@@ -58,7 +59,10 @@ router.post("/login", async (req, res) => {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ message: "Input tidak valid.", errors: error.issues });
     }
-    return res.status(500).json({ message: "Gagal login.", error: error.message });
+    return res.status(500).json({
+      message: "Gagal login.",
+      ...(IS_PROD ? {} : { error: error.message }),
+    });
   }
 });
 
