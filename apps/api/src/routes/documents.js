@@ -223,7 +223,7 @@ router.get("/:id/download", authRequired, async (req, res) => {
     return res.status(404).json({ message: "File dokumen tidak ditemukan di server." });
   }
 
-  return res.download(fileLocation, document.originalName, (error) => {
+  return res.download(fileLocation, sanitizeDownloadFilename(document.originalName), (error) => {
     if (!error) {
       return;
     }
