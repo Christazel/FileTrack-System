@@ -14,6 +14,11 @@ const { requirePositiveIntParam } = require("../utils/params");
 
 const router = express.Router();
 
+function sanitizeDownloadFilename(value) {
+  const name = String(value || "file");
+  return name.replace(/[\r\n"]/g, "_");
+}
+
 const metadataSchema = z.object({
   title: z.string().min(2).max(150),
   categoryId: z.coerce.number().int().positive(),
@@ -252,7 +257,7 @@ router.get("/:id/preview", authRequired, async (req, res) => {
   }
 
   res.setHeader("Content-Type", document.mimeType || "application/pdf");
-  res.setHeader("Content-Disposition", `inline; filename="${document.originalName}"`);
+  res.setHeader("Content-Disposition", `inline; filename="${sanitizeDownloadFilename(document.originalName)}"`);
   return res.sendFile(fileLocation, (error) => {
     if (!error) {
       return;
