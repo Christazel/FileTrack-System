@@ -1,4 +1,5 @@
 const express = require("express");
+const { z } = require("zod");
 
 const prisma = require("../prisma");
 const { authRequired, requireRoles } = require("../middleware/auth");
@@ -7,8 +8,17 @@ const { getUserScope, isAdmin, buildDocumentAccessWhere } = require("../utils/ac
 const router = express.Router();
 
 router.get("/", authRequired, requireRoles("ADMIN", "MANAGER"), async (req, res) => {
-  const page = Number(req.query.page || 1);
-  const pageSize = Number(req.query.pageSize || 20);
+  const querySchema = z.object({
+    page: z.coerce.number().int().positive().default(1),
+    pageSize: z.coerce.number().int().positive().max(100).default(20),
+  });
+
+  const parsed = querySchema.safeParse(req.query);
+  if (!parsed.success) {
+    return res.status(400).json({ message: "Query tidak valid.", errors: parsed.error.issues });
+  }
+
+  const { page, pageSize } = parsed.data;
 
   const userScope = await getUserScope(req.user.id);
 
@@ -22,7 +32,7 @@ router.get("/", authRequired, requireRoles("ADMIN", "MANAGER"), async (req, res)
     : {
         OR: [
           { userId: req.user.id },
-          { document: documentWhere },
+          { document: { is: documentWhere } },
         ],
       };
 
