@@ -129,6 +129,10 @@ router.patch("/:id", authRequired, requireRoles("ADMIN"), async (req, res) => {
       return res.status(409).json({ message: "Email sudah digunakan." });
     }
 
+    if (error?.code === "P2025") {
+      return res.status(404).json({ message: "User tidak ditemukan." });
+    }
+
     return res.status(500).json({
       message: "Gagal update user.",
       ...(IS_PROD ? {} : { error: error.message }),
@@ -160,6 +164,11 @@ router.post("/:id/reset-password", authRequired, requireRoles("ADMIN"), async (r
     if (error instanceof z.ZodError) {
       return res.status(400).json({ message: "Input reset password tidak valid.", errors: error.issues });
     }
+
+    if (error?.code === "P2025") {
+      return res.status(404).json({ message: "User tidak ditemukan." });
+    }
+
     return res.status(500).json({
       message: "Gagal reset password.",
       ...(IS_PROD ? {} : { error: error.message }),
@@ -181,6 +190,10 @@ router.delete("/:id", authRequired, requireRoles("ADMIN"), async (req, res) => {
     await prisma.user.delete({ where: { id } });
     return res.json({ message: "User dihapus." });
   } catch (error) {
+    if (error?.code === "P2025") {
+      return res.status(404).json({ message: "User tidak ditemukan." });
+    }
+
     return res.status(500).json({
       message: "Gagal menghapus user.",
       ...(IS_PROD ? {} : { error: error.message }),

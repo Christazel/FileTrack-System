@@ -75,6 +75,10 @@ router.patch("/:id", authRequired, requireRoles("ADMIN"), async (req, res) => {
       return res.status(409).json({ message: "Nama department sudah digunakan." });
     }
 
+    if (error?.code === "P2025") {
+      return res.status(404).json({ message: "Department tidak ditemukan." });
+    }
+
     return res.status(500).json({
       message: "Gagal update department.",
       ...(IS_PROD ? {} : { error: error.message }),
@@ -93,6 +97,10 @@ router.delete("/:id", authRequired, requireRoles("ADMIN"), async (req, res) => {
     return res.json({ message: "Department dihapus." });
   } catch (error) {
     // Likely FK constraint (users/documents still reference it)
+    if (error?.code === "P2025") {
+      return res.status(404).json({ message: "Department tidak ditemukan." });
+    }
+
     return res.status(409).json({
       message: "Department tidak bisa dihapus karena masih dipakai.",
       ...(IS_PROD ? {} : { error: error.message }),
