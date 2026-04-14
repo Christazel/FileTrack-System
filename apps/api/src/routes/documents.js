@@ -427,6 +427,47 @@ router.post("/:id/share", authRequired, requireRoles("ADMIN", "MANAGER"), async 
       }
     }
 
+    const existingShare = await prisma.documentShare.findFirst({
+      where: {
+        documentId: document.id,
+        sharedToId: targetUser.id,
+      },
+      select: { id: true },
+    });
+
+    if (existingShare) {
+      const updatedShare = await prisma.documentShare.update({
+        where: { id: existingShare.id },
+        data: {
+          sharedById: req.user.id,
+          message: data.message || null,
+          readAt: null,
+        },
+        include: {
+          document: true,
+          sharedBy: { select: { id: true, name: true, role: true } },
+          sharedTo: { select: { id: true, name: true, role: true } },
+        },
+      });
+
+      await createNotification({
+        userId: targetUser.id,
+        documentId: document.id,
+        action: "SHARE_DOCUMENT",
+        title: `Dokumen dibagikan: ${document.title}`,
+        detail: data.message || `${req.user.name} membagikan dokumen kepada Anda`,
+      });
+
+      await writeLog({
+        userId: req.user.id,
+        action: "SHARE_DOCUMENT",
+        detail: `Bagikan ${document.title} ke ${targetUser.name}`,
+        documentId: document.id,
+      });
+
+      return res.json(updatedShare);
+    }
+
     const shared = await prisma.documentShare.create({
       data: {
         documentId: document.id,
