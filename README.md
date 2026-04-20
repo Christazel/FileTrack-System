@@ -78,6 +78,32 @@ Repo ini berbentuk monorepo fullstack:
 Frontend: `http://localhost:5173`
 Backend: `http://localhost:4000`
 
+## Troubleshooting
+
+### Database `filetrack` tidak muncul di phpMyAdmin
+
+Biasanya ini karena phpMyAdmin kamu tersambung ke MySQL yang berbeda (mis. MySQL dari XAMPP/Laragon), bukan MySQL Docker dari project ini.
+
+Checklist cepat:
+
+1. Pastikan MySQL Docker project ini hidup:
+   ```bash
+   docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+   ```
+   Pastikan ada container `filetrack-mysql` dan port `0.0.0.0:3306->3306/tcp`.
+
+2. Cek apakah port `3306` bentrok (dipakai MySQL lain):
+   ```bash
+   netstat -ano | findstr :3306
+   ```
+   Jika ada proses lain memakai `3306`, hentikan service MySQL lokalnya atau ubah port mapping di `docker-compose.yml` (mis. `"3307:3306"`).
+
+3. Cek database dari terminal (paling akurat):
+   ```bash
+   docker exec -it filetrack-mysql mysql -uroot -proot -e "SHOW DATABASES;"
+   docker exec -it filetrack-mysql mysql -uroot -proot -e "SHOW TABLES FROM filetrack;"
+   ```
+
 ## Demo User
 
 Semua akun memakai password: `Password123!`
